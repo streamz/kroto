@@ -1,2 +1,2 @@
-# clustermuch
-cluster messaging using consistent hash
+# chrr
+clustered hash ring router
