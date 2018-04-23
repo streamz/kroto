@@ -1,2 +1,2 @@
-# chrr
-clustered hash ring router
+# routerz
+clustering hash ring router
