@@ -1,2 +1,2 @@
-# routerz
-clustering hash ring router
+# kroto
+Klustering ROuTer Object
