@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
     Copyright 2018 streamz.io
-    Cluster Hash Ring Router based on JGroups
+    KROTO: Klustering ROuter TOpology
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -18,8 +18,7 @@
 */
 package io.streamz.kroto
 
-import java.net.InetAddress
-import java.util.UUID
-
-case class NodeInfo(id: UUID, ip: InetAddress, tPort: Int)
-
+sealed trait TopologyEvent
+case object Join extends TopologyEvent
+case object Leave extends TopologyEvent
+case object TopologyUpdate extends TopologyEvent

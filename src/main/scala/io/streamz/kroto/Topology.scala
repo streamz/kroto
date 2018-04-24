@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
     Copyright 2018 streamz.io
-    Cluster Hash Ring Router based on JGroups
+    KROTO: Klustering ROuter TOpology
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,41 +16,10 @@
     limitations under the License.
 --------------------------------------------------------------------------------
 */
-
 package io.streamz.kroto
 
-import java.util.UUID
-
-import io.streamz.kroto.impl.{TopologyListener, TopologyEvent}
-import org.jgroups.JChannel
-
-trait Topology extends AutoCloseable {
-  def id: UUID
-  def isLeader: Boolean
-  def start(info: NodeInfo): Unit
+trait Topology[A] {
+  def selectRoute(a: A): Option[Endpoint]
+  def toBytes: Array[Byte]
 }
 
-object Topology {
-  def apply(p: ProtocolInfo, cb: (TopologyEvent, NodeInfo) => Unit): Topology =
-    new Topology {
-      private val jc = new JChannel(p():_*)
-
-      def start(info: NodeInfo): Unit = {
-        jc.setReceiver(
-          TopologyListener((e: TopologyEvent, info: List[NodeInfo]) => {
-
-          }))
-        jc.connect(p.clusterId)
-        ()
-      }
-
-      def isLeader: Boolean = ???
-
-      def close(): Unit = {
-        jc.disconnect()
-        ()
-      }
-
-      val id: UUID = UUID.randomUUID()
-    }
-}

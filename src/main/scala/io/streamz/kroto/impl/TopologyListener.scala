@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
     Copyright 2018 streamz.io
-    Cluster Hash Ring Router based on JGroups
+    KROTO: Klustering ROuter TOpology
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package io.streamz.kroto.impl
 
 import java.io.{OutputStream, InputStream}
 
-import io.streamz.kroto.NodeInfo
+import io.streamz.kroto.{TopologyEvent, Endpoint}
 import org.jgroups.util.MessageBatch
 import org.jgroups.{Address, View, Message, Receiver}
 
@@ -43,7 +43,7 @@ trait TopologyListener extends Receiver {
 }
 
 object TopologyListener {
-  def apply(f: (TopologyEvent, List[NodeInfo]) => Unit) = new TopologyListener {
+  def apply(f: (TopologyEvent, List[Endpoint]) => Unit) = new TopologyListener {
     def receive(msg: Message): Unit = {
 
     }
