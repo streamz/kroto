@@ -48,17 +48,17 @@ object ProtocolInfo {
     tcpNio.setBindPort(uri.getPort)
     tcpNio.setThreadPoolMaxThreads(
       p.get("max_threads")
-        .fold(Runtime.getRuntime.availableProcessors())(_(0).toInt))
+        .fold(Runtime.getRuntime.availableProcessors())(_.head.toInt))
     tcpNio.setThreadPoolKeepAliveTime(p.get("max_threads")
-      .fold(30000)(_(0).toInt))
+      .fold(30000)(_.head.toInt))
     tcpNio.setConnExpireTime(p.get("conn_timeout")
-      .fold(30000)(_(0).toInt))
+      .fold(30000)(_.head.toInt))
 
     /*
     tcpNio.setValue("recv_buf_size", p.get("recv_buf_size")
-      .fold(130000)(_(0).toInt))
+      .fold(130000)(_.head.toInt))
     tcpNio.setValue("send_buf_size", p.get("send_buf_size")
-      .fold(130000)(_(0).toInt))*/
+      .fold(130000)(_.head.toInt))*/
 
     val tcpPing = new TCPPING
     val hosts = p.get("nodes").fold(List[InetSocketAddress]()) { f =>
@@ -72,32 +72,32 @@ object ProtocolInfo {
     tcpPing.setInitialHosts(hosts)
 
     val merge3 = new MERGE3
-    merge3.setMaxInterval(p.get("min_interval").fold(10000)(_(0).toInt))
-    merge3.setMaxInterval(p.get("max_interval").fold(30000)(_(0).toInt))
+    merge3.setMaxInterval(p.get("min_interval").fold(10000)(_.head.toInt))
+    merge3.setMaxInterval(p.get("max_interval").fold(30000)(_.head.toInt))
 
     val fdAll2 = new FD_ALL2
-    fdAll2.setInterval(p.get("hb_interval").fold(8000)(_(0).toInt))
-    fdAll2.setTimeout(p.get("hb_timeout").fold(30000)(_(0).toInt))
+    fdAll2.setInterval(p.get("hb_interval").fold(8000)(_.head.toInt))
+    fdAll2.setTimeout(p.get("hb_timeout").fold(30000)(_.head.toInt))
 
     val nakack2 = new NAKACK2
     nakack2.setUseMcastXmit(false)
     nakack2.setDiscardDeliveredMsgs(p.get("discard_msgs")
-      .fold(false)(_(0).toBoolean))
+      .fold(false)(_.head.toBoolean))
     nakack2.setLogDiscardMessages(p.get("dbg_ack")
-      .fold(false)(_(0).toBoolean))
+      .fold(false)(_.head.toBoolean))
 
     val stable = new STABLE
     stable.setDesiredAverageGossip(
-      p.get("st_gossip").fold(50000L)(_(0).toLong))
+      p.get("st_gossip").fold(50000L)(_.head.toLong))
     stable.setMaxBytes(
-      p.get("st_max_size_mb").fold(4194304L)(_(0).toLong))
+      p.get("st_max_size_mb").fold(4194304L)(_.head.toLong))
 
     val rsvp = new RSVP()
     /*
-    rsvp.setValue("timeout", p.get("rsvp_timeout").fold(60000)(_(0).toInt))
-    rsvp.setValue("resend_interval", p.get("rsvp_resend").fold(500)(_(0).toInt))
+    rsvp.setValue("timeout", p.get("rsvp_timeout").fold(60000)(_.head.toInt))
+    rsvp.setValue("resend_interval", p.get("rsvp_resend").fold(500)(_.head.toInt))
     rsvp.setValue("ack_on_delivery", p.get("rsvp_ack")
-      .fold(false)(_(0).toBoolean))
+      .fold(false)(_.head.toBoolean))
 */
     Array(
       tcpNio,
@@ -122,28 +122,28 @@ object ProtocolInfo {
     val udp = new UDP
 
     val merge3 = new MERGE3
-    merge3.setMaxInterval(p.get("min_interval").fold(10000)(_(0).toInt))
-    merge3.setMaxInterval(p.get("max_interval").fold(30000)(_(0).toInt))
+    merge3.setMaxInterval(p.get("min_interval").fold(10000)(_.head.toInt))
+    merge3.setMaxInterval(p.get("max_interval").fold(30000)(_.head.toInt))
 
     val nakack2 = new NAKACK2
     nakack2.setUseMcastXmit(false)
     nakack2.setDiscardDeliveredMsgs(p.get("discard_msgs")
-      .fold(false)(_(0).toBoolean))
+      .fold(false)(_.head.toBoolean))
     nakack2.setLogDiscardMessages(p.get("dbg_ack")
-      .fold(false)(_(0).toBoolean))
+      .fold(false)(_.head.toBoolean))
 
     val stable = new STABLE
     stable.setDesiredAverageGossip(
-      p.get("st_gossip").fold(50000L)(_(0).toLong))
+      p.get("st_gossip").fold(50000L)(_.head.toLong))
     stable.setMaxBytes(
-      p.get("st_max_size_mb").fold(4194304L)(_(0).toLong))
+      p.get("st_max_size_mb").fold(4194304L)(_.head.toLong))
 
     val rsvp = new RSVP()
     /*
-    rsvp.setValue("timeout", p.get("rsvp_timeout").fold(60000)(_(0).toInt))
-    rsvp.setValue("resend_interval", p.get("rsvp_resend").fold(500)(_(0).toInt))
+    rsvp.setValue("timeout", p.get("rsvp_timeout").fold(60000)(_.head.toInt))
+    rsvp.setValue("resend_interval", p.get("rsvp_resend").fold(500)(_.head.toInt))
     rsvp.setValue("ack_on_delivery", p.get("rsvp_ack")
-      .fold(false)(_(0).toBoolean))
+      .fold(false)(_.head.toBoolean))
 */
     Array(
       udp,

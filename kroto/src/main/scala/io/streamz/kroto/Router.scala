@@ -40,7 +40,7 @@ object Router {
 
       def start(info: Endpoint): Unit = {
         jc.setReceiver(
-          TopologyListener((e: TopologyEvent, info: List[Endpoint]) => {
+          TopologyListener((e: TopologyEvent, eps: List[Endpoint]) => {
 
           }))
         jc.connect(p.clusterId)
@@ -49,7 +49,7 @@ object Router {
 
       def route(key: A): Option[Endpoint] = t.selectRoute(key)
 
-      def isLeader: Boolean = ???
+      def isLeader: Boolean = false
 
       def prefer(value: Int): Int = {
         val res = routePreference.getAndSet(value)
@@ -65,7 +65,16 @@ object Router {
       val id: UUID = UUID.randomUUID()
 
       private def updateTopology(): Unit = {
-
+        val msg = t.toBytes
+        t.endpoints.foreach { ep =>
+          // TODO: try catch retry
+          jc.send(ep.ip, msg)
+        }
       }
     }
+
+  def main(args: Array[String]): Unit = {
+
+  }
 }
+

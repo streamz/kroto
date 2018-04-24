@@ -1,7 +1,10 @@
 # kroto
 Klustering ROuter TOpology
 
-![buckminsterfullerene](buckminsterfullerene.gif)
+Harry Kroto, was an English chemist. 
+He discovered and named the buckminsterfullerene, which looks a bit like a routing topology!
+
+![buckminsterfullerene](buckminsterfullerene.png)
 
 Todo:
 1) Replicate Topology (HashRing or Route Table)

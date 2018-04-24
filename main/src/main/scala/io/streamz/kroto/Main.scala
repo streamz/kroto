@@ -18,8 +18,6 @@
 */
 package io.streamz.kroto
 
-import java.net.InetAddress
-import java.util.UUID
+object Main extends App {
 
-case class Endpoint(id: UUID, ip: InetAddress, tPort: Int)
-
+}

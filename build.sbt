@@ -1,22 +1,36 @@
 import sbt.Keys._
+import sbtassembly.AssemblyKeys
+import sbtassembly.MergeStrategy._
 
 organization := "io.streamz"
-
-name := "kroto"
 
 scalaVersion := "2.11.8"
 
 publishMavenStyle := true
 
-libraryDependencies ++= {
-  Seq(
-    "org.jgroups" % "jgroups" % "4.0.11.Final",
-    "org.slf4j" % "slf4j-api" % "1.7.12",
-    "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2",
-    "ch.qos.logback" % "logback-classic" % "1.2.3",
-    "org.specs2" %% "specs2-core" % "2.4.13" % "test"
-  )
-}
+val kroto =(project in file("kroto"))
+  .settings(name := "kroto")
+  .settings(libraryDependencies ++= Dependencies.kroto.deps)
+
+val krotomain =(project in file("main"))
+  .settings(name := "main")
+  .settings(
+    AssemblyKeys.assemblyJarName in assembly := "kroto-main.jar",
+    AssemblyKeys.assemblyMergeStrategy in assembly := {
+      case "logback.xml" => discard
+      case "pom.xml" => discard
+      case "pom.properties" => discard
+      case x =>
+        val oldStrategy = (AssemblyKeys.assemblyMergeStrategy in assembly).value
+        oldStrategy(x)
+    })
+  .dependsOn(kroto)
+
+val root = (project in file("."))
+  .settings(name := "root")
+  .settings(publishArtifact := false)
+  .aggregate(kroto, krotomain)
+  .disablePlugins(sbtassembly.AssemblyPlugin)
 
 scalacOptions ++= Seq(
   "-language:postfixOps",
