@@ -18,63 +18,24 @@
 */
 package io.streamz.kroto
 
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
+import io.streamz.kroto.impl.Group
 
-import io.streamz.kroto.impl.TopologyListener
-import org.jgroups.JChannel
-
-trait Router[A] extends AutoCloseable {
-  def id: UUID
+trait Router extends AutoCloseable {
   def isLeader: Boolean
-  def start(info: Endpoint): Unit
-  def prefer(value: Int): Int
-  def route(key: A): Option[Endpoint]
+  def start(): Unit
+  def route(key: String): Option[Endpoint]
 }
 
 object Router {
-  def apply[A](p: ProtocolInfo, t: Topology[A]): Router[A] =
-    new Router[A] {
-      private val routePreference = new AtomicInteger(100)
-      private val jc = new JChannel(p():_*)
+  def apply(
+    serviceEndpoint: Endpoint,
+    group: Group): Router = new Router {
+    // add the service endpoint
+    group.topology().add(serviceEndpoint)
 
-      def start(info: Endpoint): Unit = {
-        jc.setReceiver(
-          TopologyListener((e: TopologyEvent, eps: List[Endpoint]) => {
-
-          }))
-        jc.connect(p.clusterId)
-        ()
-      }
-
-      def route(key: A): Option[Endpoint] = t.selectRoute(key)
-
-      def isLeader: Boolean = false
-
-      def prefer(value: Int): Int = {
-        val res = routePreference.getAndSet(value)
-        updateTopology()
-        res
-      }
-
-      def close(): Unit = {
-        jc.disconnect()
-        ()
-      }
-
-      val id: UUID = UUID.randomUUID()
-
-      private def updateTopology(): Unit = {
-        val msg = t.toBytes
-        t.endpoints.foreach { ep =>
-          // TODO: try catch retry
-          jc.send(ep.ip, msg)
-        }
-      }
-    }
-
-  def main(args: Array[String]): Unit = {
-
+    def start(): Unit = group.join()
+    def route(key: String): Option[Endpoint] = group.topology().select(key)
+    def isLeader: Boolean = group.isLeader
+    def close(): Unit = group.leave()
   }
 }
-

@@ -1,20 +1,25 @@
 import sbt.Keys._
 import sbtassembly.AssemblyKeys
 import sbtassembly.MergeStrategy._
+import Settings._
 
-organization := "io.streamz"
+// TODO: CLEANUP
 
-scalaVersion := "2.11.8"
-
-publishMavenStyle := true
-
-val kroto =(project in file("kroto"))
-  .settings(name := "kroto")
+val kroto = global(project in file("kroto"), "core")
   .settings(libraryDependencies ++= Dependencies.kroto.deps)
+  .disablePlugins(sbtassembly.AssemblyPlugin)
 
-val krotomain =(project in file("main"))
-  .settings(name := "main")
+val main = global(project in file("main"), "main")
   .settings(
+    libraryDependencies ++= Seq(
+      "com.github.scopt" %% "scopt" % "3.3.0",
+      "org.slf4j" % "slf4j-simple" % "1.7.25"))
+  .settings(
+    artifact in (Compile, assembly) := {
+      val art = (artifact in (Compile, assembly)).value
+      art.copy(`classifier` = Some("assembly"))
+    },
+    addArtifact(artifact in (Compile, assembly), assembly),
     AssemblyKeys.assemblyJarName in assembly := "kroto-main.jar",
     AssemblyKeys.assemblyMergeStrategy in assembly := {
       case "logback.xml" => discard
@@ -26,10 +31,9 @@ val krotomain =(project in file("main"))
     })
   .dependsOn(kroto)
 
-val root = (project in file("."))
-  .settings(name := "root")
+val root = global(project in file("."), "kroto")
   .settings(publishArtifact := false)
-  .aggregate(kroto, krotomain)
+  .aggregate(kroto, main)
   .disablePlugins(sbtassembly.AssemblyPlugin)
 
 scalacOptions ++= Seq(
@@ -46,9 +50,3 @@ scalacOptions ++= Seq(
   "-Ywarn-dead-code",
   "-Ywarn-value-discard"
 )
-
-javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
-
-parallelExecution in Test := false
-
-fork := true

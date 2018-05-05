@@ -16,10 +16,28 @@
     limitations under the License.
 --------------------------------------------------------------------------------
 */
-package io.streamz.kroto
+package io.streamz.kroto.impl
 
-import java.util.UUID
-import org.jgroups.stack.IpAddress
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.locks.LockSupport
 
-case class Endpoint(id: UUID, ip: IpAddress)
+class SPSCQueue[A](fn: A => Unit, depth: Int) extends AutoCloseable {
+  private val queue = new ArrayBlockingQueue[A](depth)
+  private val running = new AtomicBoolean(true)
+  private val thread = new Thread(new Runnable {
+    override def run() = {
+      while (running.get()) {
+        val a = queue.poll()
+        if (a != null) fn(a)
+        LockSupport.parkNanos(1)
+      }
+    }
+  })
 
+  thread.setDaemon(true)
+  thread.start()
+
+  def push(a: A): Boolean = queue.add(a)
+  def close() = running.set(false)
+}

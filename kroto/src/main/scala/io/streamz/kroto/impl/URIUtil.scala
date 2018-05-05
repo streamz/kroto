@@ -25,11 +25,14 @@ import scala.collection.mutable
 object URIUtil {
   def parseQuery(uri: URI): Map[String, List[String]] = {
     val m = new mutable.HashMap[String, List[String]]
-    uri.getQuery.split("&").foreach { f =>
+    val query = Option(uri.getQuery)
+
+    query.foreach(_.split("&").foreach { f =>
       val kv = f.split("=")
       if (kv.length > 1)
         m.put(kv(0), m.get(kv(0)).fold(List(kv(1)))(_ ++ List(kv(1))))
-    }
+    })
+
     m.toMap
   }
 }

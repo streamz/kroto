@@ -34,7 +34,7 @@ class HashRing[A] private [impl] (replicas: Int) {
   private var ring = m.Map[Int, A]()
 
   def this(points: Seq[A], replicas: Int) = {
-    this(replicas: Int)
+    this(replicas)
     points.foreach(this += _)
   }
 

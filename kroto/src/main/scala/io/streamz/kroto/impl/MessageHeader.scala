@@ -18,34 +18,46 @@
 */
 package io.streamz.kroto.impl
 
-import java.io.{OutputStream, InputStream}
+import java.io.{DataInput, DataOutput}
+import java.util.function.Supplier
 
-import io.streamz.kroto.{TopologyEvent, Endpoint}
-import org.jgroups.util.MessageBatch
-import org.jgroups.{Address, View, Message, Receiver}
+import io.streamz.kroto._
+import org.jgroups.{Global, Header}
+import org.jgroups.util.Streamable
 
-trait TopologyListener extends Receiver {
-
-  override
-  def suspect(suspected_mbr: Address): Unit = super.suspect(suspected_mbr)
-
-  override
-  def viewAccepted(new_view: View): Unit = super.viewAccepted(new_view)
-
-  override
-  def receive(batch: MessageBatch): Unit = super.receive(batch)
-
-  override
-  def getState(output: OutputStream): Unit = super.getState(output)
-
-  override
-  def setState(input: InputStream): Unit = super.setState(input)
+object MessageHeader {
+  val magicId: Short = 4270
 }
 
-object TopologyListener {
-  def apply(f: (TopologyEvent, List[Endpoint]) => Unit) = new TopologyListener {
-    def receive(msg: Message): Unit = {
+class MessageHeader extends Header with Streamable {
+  private var id: Int = -1
 
-    }
+  def this(t: Msg) = {
+    this()
+    id = t.id
+  }
+
+  override
+  val getMagicId: Short = MessageHeader.magicId
+
+  override
+  def writeTo(out: DataOutput) = out.writeInt(id)
+
+  override
+  def readFrom(in: DataInput) = id = in.readInt()
+
+  override
+  def create() = new Supplier[MessageHeader] {
+    def get = new MessageHeader
+  }
+
+  override
+  def serializedSize() = Global.INT_SIZE
+
+  def toMsg: Option[Msg] = id match {
+    case Sync.id => Sync.toOption
+    case Status.id => Status.toOption
+    case Update.id => Update.toOption
+    case _ => None
   }
 }

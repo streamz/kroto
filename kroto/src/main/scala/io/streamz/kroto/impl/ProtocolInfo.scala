@@ -16,26 +16,26 @@
     limitations under the License.
 --------------------------------------------------------------------------------
 */
-package io.streamz.kroto
+package io.streamz.kroto.impl
 
 import java.net.{InetAddress, InetSocketAddress, URI}
 
-import io.streamz.kroto.impl.URIUtil
+import io.streamz.kroto.GroupId
 import org.jgroups.protocols._
-import org.jgroups.protocols.pbcast.{GMS, NAKACK2, STABLE, STATE_TRANSFER}
+import org.jgroups.protocols.pbcast._
 import org.jgroups.stack.Protocol
 
 import scala.collection.JavaConversions
 
 object ProtocolInfo {
-  def apply(uri: URI): Option[ProtocolInfo] = {
-    val scheme = uri.getScheme
+  def apply(uri: URI, id: GroupId): Option[ProtocolInfo] = {
+    val scheme = uri.getScheme.toLowerCase()
     scheme match {
       case "tcp" | "udp" =>
         Some(new ProtocolInfo {
-          def apply(): Array[Protocol] =
+          def get: Array[Protocol] =
             if (scheme.compareTo("tcp") == 0) tcpProto(uri) else udpProto(uri)
-          val clusterId: String = uri.getPath
+          val groupId: GroupId = id
         })
       case _ => None
     }
@@ -53,15 +53,13 @@ object ProtocolInfo {
       .fold(30000)(_.head.toInt))
     tcpNio.setConnExpireTime(p.get("conn_timeout")
       .fold(30000)(_.head.toInt))
-
-    /*
     tcpNio.setValue("recv_buf_size", p.get("recv_buf_size")
       .fold(130000)(_.head.toInt))
     tcpNio.setValue("send_buf_size", p.get("send_buf_size")
-      .fold(130000)(_.head.toInt))*/
+      .fold(130000)(_.head.toInt))
 
     val tcpPing = new TCPPING
-    val hosts = p.get("nodes").fold(List[InetSocketAddress]()) { f =>
+    val hosts = p.get("node").fold(List[InetSocketAddress]()) { f =>
       f.flatMap { s =>
         val hp = s.split(":")
         if (hp.length > 1) Some(new InetSocketAddress(hp(0), hp(1).toInt))
@@ -93,12 +91,11 @@ object ProtocolInfo {
       p.get("st_max_size_mb").fold(4194304L)(_.head.toLong))
 
     val rsvp = new RSVP()
-    /*
     rsvp.setValue("timeout", p.get("rsvp_timeout").fold(60000)(_.head.toInt))
     rsvp.setValue("resend_interval", p.get("rsvp_resend").fold(500)(_.head.toInt))
     rsvp.setValue("ack_on_delivery", p.get("rsvp_ack")
       .fold(false)(_.head.toBoolean))
-*/
+
     Array(
       tcpNio,
       tcpPing,
@@ -114,7 +111,7 @@ object ProtocolInfo {
       new MFC_NB,
       new FRAG3,
       rsvp,
-      new STATE_TRANSFER)
+      new STATE)
   }
 
   private def udpProto(uri: URI): Array[Protocol] = {
@@ -139,12 +136,11 @@ object ProtocolInfo {
       p.get("st_max_size_mb").fold(4194304L)(_.head.toLong))
 
     val rsvp = new RSVP()
-    /*
     rsvp.setValue("timeout", p.get("rsvp_timeout").fold(60000)(_.head.toInt))
     rsvp.setValue("resend_interval", p.get("rsvp_resend").fold(500)(_.head.toInt))
     rsvp.setValue("ack_on_delivery", p.get("rsvp_ack")
       .fold(false)(_.head.toBoolean))
-*/
+
     Array(
       udp,
       new PING,
@@ -160,11 +156,11 @@ object ProtocolInfo {
       new MFC_NB,
       new FRAG3,
       rsvp,
-      new STATE_TRANSFER)
+      new STATE)
   }
 }
 
 trait ProtocolInfo {
-  def apply(): Array[Protocol]
-  def clusterId: String
+  def get: Array[Protocol]
+  def groupId: GroupId
 }

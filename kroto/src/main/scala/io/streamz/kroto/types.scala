@@ -18,7 +18,41 @@
 */
 package io.streamz.kroto
 
-sealed trait TopologyEvent
-case object Join extends TopologyEvent
-case object Leave extends TopologyEvent
-case object TopologyUpdate extends TopologyEvent
+import java.net.URI
+
+sealed trait Msg {
+  def id: Int
+  def toOption: Option[Msg]
+}
+case object Sync extends Msg {
+  val id = 0
+  val toOption = Some(Sync)
+}
+case object Status extends Msg {
+  val id = 1
+  val toOption = Some(Status)
+}
+case object Update extends Msg {
+  val id = 2
+  val toOption = Some(Update)
+}
+
+/**
+  * The Id of the group
+  * @param value string id
+  */
+case class GroupId(value: String) extends AnyVal
+
+/**
+  * The Id of the replica set
+  * @param value string id
+  */
+case class ReplicaSetId(value: String) extends AnyVal
+
+/**
+  * An endpoint URI
+  * @param ep Endpoint
+  * @param id ReplicaSetId
+  */
+case class Endpoint(ep: URI, id: ReplicaSetId)
+
