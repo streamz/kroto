@@ -20,16 +20,15 @@ package io.streamz.kroto
 
 import java.io.{InputStream, OutputStream}
 import java.util.concurrent.atomic.AtomicReference
-import io.streamz.kroto.impl.HashRing
 import scala.collection.{mutable => m}
 
-trait Topology {
+trait Topology[A] {
   /**
     * Select an endpoint
     * @param key the routing key
     * @return the optional endpoint
     */
-  def select(key: String): Option[Endpoint]
+  def select(key: A): Option[Endpoint]
 
   /**
     * Read in and update the topology
@@ -60,29 +59,27 @@ trait Topology {
   * endpoint selection is determined by the balance function.
   */
 object Topology {
-  def apply(
+  def apply[A](
+    mapper: A => Option[ReplicaSetId],
     balance: m.Set[Endpoint] => Option[Endpoint],
     reader: InputStream => List[Set[Endpoint]],
-    writer: (List[Set[Endpoint]], OutputStream) => Unit) = new Topology {
+    writer: (List[Set[Endpoint]], OutputStream) => Unit) = new Topology[A] {
     private val emptyEp: Option[Endpoint] = None
     private val index =
-      new AtomicReference[(HashRing[ReplicaSetId], m.MultiMap[ReplicaSetId, Endpoint])](
-        (HashRing[ReplicaSetId](197), new m.HashMap[ReplicaSetId, m.Set[Endpoint]]
+      new AtomicReference[m.MultiMap[ReplicaSetId, Endpoint]](
+        new m.HashMap[ReplicaSetId, m.Set[Endpoint]]
           with m.MultiMap[ReplicaSetId, Endpoint])
-      )
 
-    def select(key: String) = {
-      val (r, i) = index.get()
-      i.get(r(key)).fold(emptyEp)(balance(_))
-    }
+    def select(key: A) =
+      mapper(key).fold(emptyEp)(index.get.get(_).fold(emptyEp)(balance(_)))
 
     def read(in: InputStream) = update(reader(in))
 
     def write(out: OutputStream) =
-      writer(index.get._2.map(_._2.toSet).toList, out)
+      writer(index.get.map(_._2.toSet).toList, out)
 
     def find(la: LogicalAddress) = {
-      val i = index.get()._2
+      val i = index.get()
       i.values.flatten
         .find(ep => ep.la.fold(false)(a => a.value.equals(la.value)))
     }
@@ -90,7 +87,7 @@ object Topology {
     override
     def toString = {
       val sb = new StringBuilder
-      index.get()._2.foreach { set =>
+      index.get().foreach { set =>
         sb.append("replicaSetId: ")
           .append(set._1.value)
         set._2.foreach { ep =>
@@ -105,13 +102,12 @@ object Topology {
     }
 
     private [kroto] def add(ep: Endpoint) = synchronized {
-      val (r, i) = index.get()
-      if (!r.nodes.contains(ep.id)) r += ep.id
+      val i = index.get()
       i.get(ep.id).fold(i.put(ep.id, m.Set(ep)))(s => i.put(ep.id, s + ep))
     }
 
     private [kroto] def remove(la: LogicalAddress) = synchronized {
-      val i = index.get()._2
+      val i = index.get()
       i.foreach { kv =>
         i.put(
           kv._1,
@@ -120,16 +116,14 @@ object Topology {
     }
 
     private def update(epl: List[Set[Endpoint]]) = synchronized {
-      val r = HashRing[ReplicaSetId](197)
       val i = new m.HashMap[ReplicaSetId, m.Set[Endpoint]]
         with m.MultiMap[ReplicaSetId, Endpoint]
       epl.foreach { set =>
         set.foreach { ep =>
-          if (!r.nodes.contains(ep.id)) r += ep.id
           i.get(ep.id).fold(i.put(ep.id, m.Set(ep)))(s => i.put(ep.id, s + ep))
         }
       }
-      index.set((r, i))
+      index.set(i)
     }
   }
 }

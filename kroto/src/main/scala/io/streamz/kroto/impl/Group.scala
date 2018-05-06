@@ -26,23 +26,23 @@ import com.typesafe.scalalogging.StrictLogging
 import io.streamz.kroto._
 import org.jgroups._
 
-trait Group {
+trait Group[A] {
   def isLeader: Boolean
   def join(ep: Endpoint): Unit
   def leave(): Unit
-  def topology(): Topology
+  def topology(): Topology[A]
 }
 
 object Group {
-  private val eg: Option[Group] = None
-  def apply(
+  def apply[A](
     uri: URI,
     id: GroupId,
-    top: Topology): Option[Group] = ProtocolInfo(uri, id).fold(eg) { p =>
+    top: Topology[A]): Option[Group[A]] =
+    ProtocolInfo(uri, id).fold(Option.empty[Group[A]]) { p =>
     import org.jgroups.conf.ClassConfigurator
     ClassConfigurator.add(MessageHeader.magicId, classOf[MessageHeader])
     Some {
-      new Group with Receiver with StrictLogging {
+      new Group[A] with Receiver with StrictLogging {
         private val jc = new JChannel(p.get: _*)
         private val leader = new AtomicBoolean(false)
         private val worker = new SPSCQueue[View](update, 10)
@@ -60,16 +60,7 @@ object Group {
           val sep = ep.copy(la = Some(LogicalAddress(jc.getAddressAsString)))
           topology().add(sep)
 
-          if (!isLeader) {
-            val msg = new Message(true)
-            val hdr = new MessageHeader(Hello)
-            msg.putHeader(hdr.getMagicId, hdr)
-            // send back to the coordinator
-            msg.setDest(jc.getView.getMembers.get(0))
-            msg.setBuffer(Endpoint.toBuffer(sep))
-            jc.send(msg)
-            ()
-          }
+          if (!isLeader) sendHelloMsg(sep)
         }
 
         def leave() = {
@@ -104,14 +95,13 @@ object Group {
         }
 
         def suspect(suspect: Address) =
-          println(s"... $suspect is suspect")
+          logger.error(s"... $suspect is suspect")
 
         def getState(out: OutputStream) = top.write(out)
 
         def setState(in: InputStream) = top.read(in)
 
         private def update(view: View) = {
-          println(s"... viewAccepted:\n$view")
           val vw = view match {
             case v: MergeView => mergeViews(v)
             case _ => view
@@ -125,8 +115,28 @@ object Group {
         }
 
         private def mergeViews(v: MergeView) = {
-          println(s"---> mergeViews:\n$v")
+          import scala.collection.JavaConversions._
+          val partition = v.getSubgroups.headOption
+          val address = jc.getAddress
+          val sync = partition.fold(false) { p =>
+            !p.getMembers.contains(address)
+          }
+          if (sync) {
+            if (!isLeader)
+              top.find(LogicalAddress(address.toString)).foreach(sendHelloMsg)
+            else jc.getState(null, 5000)
+          }
           v
+        }
+
+        private def sendHelloMsg(dest: Endpoint) = {
+          val msg = new Message(true)
+          val hdr = new MessageHeader(Hello)
+          msg.putHeader(hdr.getMagicId, hdr)
+          // send back to the coordinator
+          msg.setDest(jc.getView.getMembers.get(0))
+          msg.setBuffer(Endpoint.toBuffer(dest))
+          jc.send(msg)
         }
 
         private def sendSyncMsg() = {

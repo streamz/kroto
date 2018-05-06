@@ -58,21 +58,23 @@ object Main extends App {
       (x,c) => c.copy(hpl = x) } text "list of nodes host:port" optional()
   }
 
-  val router: Option[Router] = parser.parse(args, Config()) match {
+  val router: Option[Router[String]] = parser.parse(args, Config()) match {
     case Some(c) =>
       val uri = {
         if (c.hpl.isEmpty) c.uri
         else new URI(c.uri + "?" + c.hpl.map("node=" + _).mkString("&"))
       }
+      val m = Map[String, ReplicaSetId]()
       val g = Group(
         uri,
         GroupId(c.gid),
         Topology(
+          (s: String) => m.get(s),
           (s: mutable.Set[Endpoint]) => s.headOption,
           (in: InputStream) => SimpleSerDe.read(in),
           (epl: List[Set[Endpoint]], out: OutputStream) =>
             SimpleSerDe.write(epl, out)))
-      g.fold(None.asInstanceOf[Option[Router]]) { f =>
+      g.fold(None.asInstanceOf[Option[Router[String]]]) { f =>
         Some(Router(Endpoint(c.ep, ReplicaSetId(c.rid)), f))
       }
     case _ => None
