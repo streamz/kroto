@@ -37,7 +37,11 @@ case class Config(
 
 object Main extends App {
   Runtime.getRuntime.addShutdownHook(new Thread {
-    override def run() = router.foreach(_.close())
+    override def run() = {
+      println("dumping topology:")
+      println(router.get.toString)
+      router.foreach(_.close())
+    }
   })
   val parser = new OptionParser[Config]("kroto-main-node") {
     head("kroto-main-node", "x.x")
@@ -87,14 +91,18 @@ object SimpleSerDe {
       0 until setSize foreach { _ =>
         val uri = new URI(is.readUTF())
         val rep = ReplicaSetId(is.readUTF())
-        s.add(Endpoint(uri, rep))
+        val la = is.readUTF()
+        s.add(Endpoint(uri, rep, if (la.nonEmpty) Some(LogicalAddress(la)) else None))
       }
       listBuffer += s.toSet
     }
-    listBuffer.toList
+    val l = listBuffer.toList
+    println(s"=== read $l")
+    l
   }
 
   def write(epl: List[Set[Endpoint]], out: OutputStream) = {
+    println(s"=== write: $epl")
     val os = new DataOutputStream(out)
     os.writeInt(epl.length)
     epl.foreach { set =>
@@ -102,6 +110,7 @@ object SimpleSerDe {
       set.foreach { ep =>
         os.writeUTF(ep.ep.toString)
         os.writeUTF(ep.id.value)
+        os.writeUTF(ep.la.fold("")(_.value))
       }
     }
     os.flush()

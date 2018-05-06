@@ -31,12 +31,27 @@ trait Topology {
     */
   def select(key: String): Option[Endpoint]
 
+  /**
+    * Read in and update the topology
+    * @param in InputStream
+    */
   def read(in: InputStream): Unit
+
+  /**
+    * Write the topology to the OutputStream
+    * @param out OutputStream
+    */
   def write(out: OutputStream): Unit
 
-  private [kroto] def message(msg: Msg): Unit
+  /**
+    * Find the endpoint given a LogicalAddress
+    * @param la LogicalAddress
+    * @return optional Endpoint
+    */
+  def find(la: LogicalAddress): Option[Endpoint]
+
   private [kroto] def add(ep: Endpoint)
-  private [kroto] def remove(ep: Endpoint)
+  private [kroto] def remove(la: LogicalAddress)
 }
 
 /**
@@ -50,38 +65,58 @@ object Topology {
     reader: InputStream => List[Set[Endpoint]],
     writer: (List[Set[Endpoint]], OutputStream) => Unit) = new Topology {
     private val emptyEp: Option[Endpoint] = None
-    private val idx =
+    private val index =
       new AtomicReference[(HashRing[ReplicaSetId], m.MultiMap[ReplicaSetId, Endpoint])](
         (HashRing[ReplicaSetId](197), new m.HashMap[ReplicaSetId, m.Set[Endpoint]]
           with m.MultiMap[ReplicaSetId, Endpoint])
       )
 
     def select(key: String) = {
-      val (r, i) = idx.get()
+      val (r, i) = index.get()
       i.get(r(key)).fold(emptyEp)(balance(_))
     }
 
     def read(in: InputStream) = update(reader(in))
 
     def write(out: OutputStream) =
-      writer(idx.get._2.map(_._2.toSet).toList, out)
+      writer(index.get._2.map(_._2.toSet).toList, out)
 
-    private [kroto] def message(msg: Msg) = msg match {
-      case Sync =>
-        println("--> Sync received!")
-      case Status =>
-      case _ =>
+    def find(la: LogicalAddress) = {
+      val i = index.get()._2
+      i.values.flatten
+        .find(ep => ep.la.fold(false)(a => a.value.equals(la.value)))
+    }
+
+    override
+    def toString = {
+      val sb = new StringBuilder
+      index.get()._2.foreach { set =>
+        sb.append("replicaSetId: ")
+          .append(set._1.value)
+        set._2.foreach { ep =>
+          sb.append("\n\t")
+            .append(s"address: ${ep.la.fold("NA")(_.value)}")
+            .append("\n\t")
+            .append(s"endpoint: ${ep.ep}")
+        }
+        sb.append("\n")
+      }
+      sb.toString()
     }
 
     private [kroto] def add(ep: Endpoint) = synchronized {
-      val (r, i) = idx.get()
+      val (r, i) = index.get()
       if (!r.nodes.contains(ep.id)) r += ep.id
       i.get(ep.id).fold(i.put(ep.id, m.Set(ep)))(s => i.put(ep.id, s + ep))
     }
 
-    private [kroto] def remove(ep: Endpoint) = synchronized {
-      val i = idx.get()._2
-      i.get(ep.id).foreach(s => i.put(ep.id, s.filterNot(_.equals(ep))))
+    private [kroto] def remove(la: LogicalAddress) = synchronized {
+      val i = index.get()._2
+      i.foreach { kv =>
+        i.put(
+          kv._1,
+          kv._2.filterNot(_.la.fold(false)(a => a.value.equals(la.value))))
+      }
     }
 
     private def update(epl: List[Set[Endpoint]]) = synchronized {
@@ -94,7 +129,7 @@ object Topology {
           i.get(ep.id).fold(i.put(ep.id, m.Set(ep)))(s => i.put(ep.id, s + ep))
         }
       }
-      idx.set((r, i))
+      index.set((r, i))
     }
   }
 }

@@ -57,7 +57,7 @@ class MessageHeader extends Header with Streamable {
   def toMsg: Option[Msg] = id match {
     case Sync.id => Sync.toOption
     case Status.id => Status.toOption
-    case Update.id => Update.toOption
+    case Hello.id => Hello.toOption
     case _ => None
   }
 }

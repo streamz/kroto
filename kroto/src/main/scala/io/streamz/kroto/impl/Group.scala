@@ -23,13 +23,12 @@ import java.net.URI
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 import com.typesafe.scalalogging.StrictLogging
-import io.streamz.kroto.{GroupId, Topology}
+import io.streamz.kroto._
 import org.jgroups._
-import org.jgroups.util.MessageBatch
 
 trait Group {
   def isLeader: Boolean
-  def join(): Unit
+  def join(ep: Endpoint): Unit
   def leave(): Unit
   def topology(): Topology
 }
@@ -53,10 +52,24 @@ object Group {
 
         def topology() = top
 
-        def join(): Unit = {
+        def join(ep: Endpoint): Unit = {
           jc.setReceiver(this)
+          jc.setDiscardOwnMessages(true)
           jc.connect(id.value)
-          ()
+
+          val sep = ep.copy(la = Some(LogicalAddress(jc.getAddressAsString)))
+          topology().add(sep)
+
+          if (!isLeader) {
+            val msg = new Message(true)
+            val hdr = new MessageHeader(Hello)
+            msg.putHeader(hdr.getMagicId, hdr)
+            // send back to the coordinator
+            msg.setDest(jc.getView.getMembers.get(0))
+            msg.setBuffer(Endpoint.toBuffer(sep))
+            jc.send(msg)
+            ()
+          }
         }
 
         def leave() = {
@@ -67,35 +80,38 @@ object Group {
 
         def receive(msg: Message) = Option[Header](
           msg.getHeader(MessageHeader.magicId)).foreach {
-          case m: MessageHeader => m.toMsg.foreach(top.message)
-          case _ => logger.info(s"---> discarding message:\n$msg")
+          case m: MessageHeader =>
+            m.toMsg.foreach {
+              case Sync =>
+                logger.debug("topology has changed, getting state")
+                jc.getState(null, 5000)
+              case Hello =>
+                logger.debug(s"`Hello` received: $msg")
+                top.add(Endpoint.fromBuffer(msg.getBuffer))
+                sendSyncMsg()
+              case _ =>
+            }
+          case _ => logger.debug(s"discarding message:\n$msg")
         }
 
         def viewAccepted(view: View) = {
           val address = jc.address()
           import scala.collection.JavaConversions._
           leader.set(view.getMembers.headOption.fold(false) { a =>
-            val lead = a.equals(address)
-            println(s"$a is the leader; ${if (lead) "that is me!"}")
-            lead
+            a.equals(address)
           })
           worker.push(view)
         }
 
         def suspect(suspect: Address) =
-          println(s"---> $suspect is suspect")
-
-        def receive(batch: MessageBatch) = {
-          import scala.collection.JavaConversions._
-          batch.foreach(receive)
-        }
+          println(s"... $suspect is suspect")
 
         def getState(out: OutputStream) = top.write(out)
 
         def setState(in: InputStream) = top.read(in)
 
         private def update(view: View) = {
-          println(s"---> viewAccepted:\n$view")
+          println(s"... viewAccepted:\n$view")
           val vw = view match {
             case v: MergeView => mergeViews(v)
             case _ => view
@@ -103,17 +119,23 @@ object Group {
 
           import scala.collection.JavaConversions._
           val group = vw.getMembers.toSet
-          println(s"---> $group is the new group")
           val leftGroup = members.get.diff(group)
-          println(s"---> $leftGroup left the group")
-          val joinedGroup = group.diff(members.getAndSet(group))
-          println(s"---> $joinedGroup joined the group")
+          leftGroup.foreach(a => top.remove(LogicalAddress(a.toString)))
+          members.getAndSet(group)
         }
 
         private def mergeViews(v: MergeView) = {
-          // TODO: create a new thread to do the merge
           println(s"---> mergeViews:\n$v")
           v
+        }
+
+        private def sendSyncMsg() = {
+          // sync message will force followers to get state
+          val msg = new Message(true)
+          val hdr = new MessageHeader(Sync)
+          msg.putHeader(hdr.getMagicId, hdr)
+          logger.debug(s"sending sync message: $msg")
+          jc.send(msg)
         }
       }
     }

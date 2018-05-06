@@ -30,12 +30,13 @@ object Router {
   def apply(
     serviceEndpoint: Endpoint,
     group: Group): Router = new Router {
-    // add the service endpoint
-    group.topology().add(serviceEndpoint)
 
-    def start(): Unit = group.join()
+    def start(): Unit = group.join(serviceEndpoint)
     def route(key: String): Option[Endpoint] = group.topology().select(key)
     def isLeader: Boolean = group.isLeader
     def close(): Unit = group.leave()
+
+    override
+    def toString = group.topology().toString
   }
 }
