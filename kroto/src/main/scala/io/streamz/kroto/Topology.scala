@@ -20,6 +20,9 @@ package io.streamz.kroto
 
 import java.io.{InputStream, OutputStream}
 import java.util.concurrent.atomic.AtomicReference
+
+import com.typesafe.scalalogging.StrictLogging
+
 import scala.collection.{mutable => m}
 
 trait Topology[A] {
@@ -63,7 +66,8 @@ object Topology {
     mapper: A => Option[ReplicaSetId],
     balance: m.Set[Endpoint] => Option[Endpoint],
     reader: InputStream => List[Set[Endpoint]],
-    writer: (List[Set[Endpoint]], OutputStream) => Unit) = new Topology[A] {
+    writer: (List[Set[Endpoint]], OutputStream) => Unit) =
+    new Topology[A] with StrictLogging {
     private val emptyEp: Option[Endpoint] = None
     private val index =
       new AtomicReference[m.MultiMap[ReplicaSetId, Endpoint]](
@@ -102,11 +106,13 @@ object Topology {
     }
 
     private [kroto] def add(ep: Endpoint) = synchronized {
+      logger.debug(s"adding: ${ep.la.fold("")(_.value)} endpoint: ${ep.ep}")
       val i = index.get()
       i.get(ep.id).fold(i.put(ep.id, m.Set(ep)))(s => i.put(ep.id, s + ep))
     }
 
     private [kroto] def remove(la: LogicalAddress) = synchronized {
+      logger.debug(s"removing: ${la.value}")
       val i = index.get()
       i.foreach { kv =>
         i.put(
@@ -124,6 +130,7 @@ object Topology {
         }
       }
       index.set(i)
+      logger.debug(s"topology update: \n$toString")
     }
   }
 }

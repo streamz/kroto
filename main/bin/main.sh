@@ -17,6 +17,7 @@ PID=
 ENDPOINT=
 LOG_OUT=
 LOG_ERR=
+LOG_LEVEL="info"
 JAVA_HOME=
 APP_JAR="kroto-main.jar"
 
@@ -44,6 +45,9 @@ while [ "$1" != "" ]; do
             ;;
         -proto)
             PROTO="${VALUE}"
+            ;;
+        -loglevel)
+            LOG_LEVEL="${VALUE}"
             ;;
         *)
 
@@ -104,7 +108,7 @@ function run()
 
     APP_ARGS="-e ${ENDPOINT} -u ${PROTO}://localhost:${PORT} -g ${GROUP} -r ${REP}"
 
-    JAVA_OPTS=" ${JAVA_OPTS} -Djava.net.preferIPv4Stack=true"
+    JAVA_OPTS=" ${JAVA_OPTS} -Djava.net.preferIPv4Stack=true -Dorg.slf4j.simpleLogger.defaultLogLevel=${LOG_LEVEL}"
     JAVA_OPTS="-server -Xmx1g -Xms1g ${JAVA_OPTS}"
     JCMD="${JAVA_OPTS} ${JMX} -jar ${KROTO_HOME}/${APP_JAR} ${APP_ARGS}"
     echo ${JCMD}

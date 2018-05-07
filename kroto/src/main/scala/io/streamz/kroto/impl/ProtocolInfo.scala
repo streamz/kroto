@@ -122,6 +122,10 @@ object ProtocolInfo {
     merge3.setMaxInterval(p.get("min_interval").fold(10000)(_.head.toInt))
     merge3.setMaxInterval(p.get("max_interval").fold(30000)(_.head.toInt))
 
+    val fdAll2 = new FD_ALL2
+    fdAll2.setInterval(p.get("hb_interval").fold(8000)(_.head.toInt))
+    fdAll2.setTimeout(p.get("hb_timeout").fold(30000)(_.head.toInt))
+
     val nakack2 = new NAKACK2
     nakack2.setUseMcastXmit(false)
     nakack2.setDiscardDeliveredMsgs(p.get("discard_msgs")
@@ -146,7 +150,7 @@ object ProtocolInfo {
       new PING,
       merge3,
       new FD_SOCK,
-      new FD_ALL2,
+      fdAll2,
       new VERIFY_SUSPECT,
       new BARRIER,
       nakack2,
