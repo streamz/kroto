@@ -10,13 +10,16 @@ PORT=
 GROUP=
 PROTO=
 REP=
+REPS=
 START=
 WORK=
 EXT=
 PID=
 ENDPOINT=
+QUERY_STRING=
 LOG_OUT=
 LOG_ERR=
+T_PORT=
 LOG_LEVEL="info"
 JAVA_HOME=
 APP_JAR="kroto-main.jar"
@@ -34,11 +37,17 @@ while [ "$1" != "" ]; do
         -port)
             PORT="${VALUE}"
             ;;
+        -tport)
+            T_PORT="${VALUE}"
+            ;;
         -group)
             GROUP="${VALUE}"
             ;;
         -replica)
             REP="${VALUE}"
+            ;;
+         -replicas)
+            REPS="${VALUE}"
             ;;
         -endpoint)
             ENDPOINT="${VALUE}"
@@ -91,12 +100,22 @@ function checkStartFlags()
     fi
     if [ -z "${REP}" ]; then
         usage
+        echo "ERROR: No replica set Id specified"
+        exit 1
+    fi
+    if [ -z "${REPS}" ]; then
+        usage
         echo "ERROR: No replica set specified"
         exit 1
     fi
     if [ -z "${PROTO}" ]; then
         usage
         echo "ERROR: No protocol uri specified"
+        exit 1
+    fi
+    if [ -z "${T_PORT}" ]; then
+        usage
+        echo "ERROR: No tport specified"
         exit 1
     fi
 }
@@ -106,7 +125,13 @@ function run()
     checkEnvironment
     checkStartFlags
 
-    APP_ARGS="-e ${ENDPOINT} -u ${PROTO}://localhost:${PORT} -g ${GROUP} -r ${REP}"
+    APP_ARGS="-e ${ENDPOINT} -g ${GROUP} -r ${REP} -p ${T_PORT} -s ${REPS}"
+
+    if [ -z "${QUERY_STRING}" ]; then
+        APP_ARGS="${APP_ARGS} -u ${PROTO}://localhost:${PORT}"
+    else
+        APP_ARGS="${APP_ARGS} -u ${PROTO}://localhost:${PORT}/?${QUERY_STRING}"
+    fi
 
     JAVA_OPTS=" ${JAVA_OPTS} -Djava.net.preferIPv4Stack=true -Dorg.slf4j.simpleLogger.defaultLogLevel=${LOG_LEVEL}"
     JAVA_OPTS="-server -Xmx1g -Xms1g ${JAVA_OPTS}"

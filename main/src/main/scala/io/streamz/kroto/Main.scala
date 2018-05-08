@@ -18,14 +18,14 @@
 */
 package io.streamz.kroto
 
-import java.io.{DataInputStream, DataOutputStream, InputStream, OutputStream}
-import java.net.URI
+import java.io.{BufferedReader, InputStreamReader, PrintWriter}
+import java.net.{ServerSocket, URI}
+import java.util.concurrent.atomic.AtomicBoolean
 
 import io.streamz.kroto.impl.Group
 import scopt.OptionParser
 
-import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
+import scala.language.postfixOps
 
 case class Request(key: String)
 case class Config(
@@ -33,14 +33,59 @@ case class Config(
   rid: String = "",
   uri: URI = null,
   ep: URI = null,
+  port: Int = 9999,
+  sets: Seq[String] = Seq(),
   hpl: Seq[String] = Seq())
+
+class TestServer(port: Int, router: Router[String]) {
+  val running = new AtomicBoolean(false)
+  val thread = new Thread {
+    override def run() = {
+      println(s"TestServer running on port: $port")
+      val serverSocket = new ServerSocket(port)
+      while (running.get) {
+        val sock = serverSocket.accept
+        val os = sock.getOutputStream
+        val br = new BufferedReader(new InputStreamReader(sock.getInputStream))
+        val pw = new PrintWriter(os, true)
+        while (running.get && !sock.isClosed) {
+          pw.print("%>")
+          pw.flush()
+          val str = br.readLine
+          if (str.compareToIgnoreCase("quit") == 0) sock.close()
+          else {
+            pw.println(s"routed $str to: ${
+              router.route(str).fold("No Route")(_.toString)}")
+          }
+          pw.flush()
+        }
+        pw.println("Bye!")
+        pw.close()
+        br.close()
+        if (sock.isConnected) sock.close()
+      }
+      serverSocket.close()
+    }
+  }
+
+  def start() = {
+    running.set(true)
+    router.start()
+    thread.start()
+  }
+
+  def stop() = {
+    running.set(false)
+    println("dumping topology:")
+    println(router.toString)
+    router.close()
+  }
+}
 
 object Main extends App {
   Runtime.getRuntime.addShutdownHook(new Thread {
     override def run() = {
-      println("dumping topology:")
-      println(router.get.toString)
-      router.foreach(_.close())
+      server.foreach(_.stop())
     }
   })
   val parser = new OptionParser[Config]("kroto-main-node") {
@@ -53,68 +98,38 @@ object Main extends App {
       (x,c) => c.copy(uri = x) } text "uri for this node" required()
     opt[URI]('e', "endpoint") valueName "<endpoint>" action {
       (x,c) => c.copy(ep = x) } text "endpoint to route to" required()
+    opt[Int]('p', "port") valueName "<port>" action {
+      (x,c) => c.copy(port = x) } text "telnet port" required()
+    opt[Seq[String]]('s', "replicas") valueName
+      "<r1>,<r2>..." action {
+      (x,c) => c.copy(sets = x) } text "list of replica set ids" required()
     opt[Seq[String]]('h', "host:port") valueName
       "<host:port1>,<host:port2>..." action {
       (x,c) => c.copy(hpl = x) } text "list of nodes host:port" optional()
   }
-
-  val router: Option[Router[String]] = parser.parse(args, Config()) match {
+  val server: Option[TestServer] = parser.parse(args, Config()) match {
     case Some(c) =>
       val uri = {
         if (c.hpl.isEmpty) c.uri
         else new URI(c.uri + "?" + c.hpl.map("node=" + _).mkString("&"))
       }
-      val m = Map[String, ReplicaSetId]()
+      val replicas: Map[Int, ReplicaSetId] =
+        c.sets.map(ReplicaSetId).zipWithIndex.map(_.swap).toMap
+
       val g = Group(
         uri,
         GroupId(c.gid),
         Topology(
-          (s: String) => m.get(s),
-          (s: mutable.Set[Endpoint]) => s.headOption,
-          (in: InputStream) => SimpleSerDe.read(in),
-          (epl: List[Set[Endpoint]], out: OutputStream) =>
-            SimpleSerDe.write(epl, out)))
-      g.fold(None.asInstanceOf[Option[Router[String]]]) { f =>
+          (s: String) => {
+            if (replicas.isEmpty) None
+            else replicas.get(s.hashCode % replicas.size)
+          },
+          LoadBalancer.random))
+      val ro = g.fold(Option.empty[Router[String]]) { f =>
         Some(Router(Endpoint(c.ep, ReplicaSetId(c.rid)), f))
       }
+      ro.fold(Option.empty[TestServer])(r => Some(new TestServer(c.port, r)))
     case _ => None
   }
-  router.foreach(_.start())
-}
-
-object SimpleSerDe {
-  def read(in: InputStream): List[Set[Endpoint]] = {
-    val is = new DataInputStream(in)
-    val listLen = is.readInt()
-    val listBuffer = new ListBuffer[Set[Endpoint]]
-    0 until listLen foreach { _ =>
-      val setSize = is.readInt()
-      val s = new mutable.HashSet[Endpoint]()
-      0 until setSize foreach { _ =>
-        val uri = new URI(is.readUTF())
-        val rep = ReplicaSetId(is.readUTF())
-        val la = is.readUTF()
-        s.add(Endpoint(uri, rep, if (la.nonEmpty) Some(LogicalAddress(la)) else None))
-      }
-      listBuffer += s.toSet
-    }
-    val l = listBuffer.toList
-    println(s"=== read $l")
-    l
-  }
-
-  def write(epl: List[Set[Endpoint]], out: OutputStream) = {
-    println(s"=== write: $epl")
-    val os = new DataOutputStream(out)
-    os.writeInt(epl.length)
-    epl.foreach { set =>
-      os.writeInt(set.size)
-      set.foreach { ep =>
-        os.writeUTF(ep.ep.toString)
-        os.writeUTF(ep.id.value)
-        os.writeUTF(ep.la.fold("")(_.value))
-      }
-    }
-    os.flush()
-  }
+  server.foreach(_.start())
 }

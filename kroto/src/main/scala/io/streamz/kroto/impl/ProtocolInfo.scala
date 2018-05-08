@@ -28,6 +28,10 @@ import org.jgroups.stack.Protocol
 import scala.collection.JavaConversions
 
 object ProtocolInfo {
+  def apply(pa: Array[Protocol], gid: GroupId) = new ProtocolInfo {
+    def get = pa
+    def groupId = gid
+  }
   def apply(uri: URI, id: GroupId): Option[ProtocolInfo] = {
     val scheme = uri.getScheme.toLowerCase()
     scheme match {

@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.collection.{mutable => m}
+import io.streamz.kroto.impl.{Marshaller => mm}
 
 trait Topology[A] {
   /**
@@ -64,18 +65,18 @@ trait Topology[A] {
 object Topology {
   def apply[A](
     mapper: A => Option[ReplicaSetId],
-    balance: m.Set[Endpoint] => Option[Endpoint],
-    reader: InputStream => List[Set[Endpoint]],
-    writer: (List[Set[Endpoint]], OutputStream) => Unit) =
+    balance: List[Endpoint] => Option[Endpoint],
+    reader: InputStream => List[Set[Endpoint]] = mm.read,
+    writer: (List[Set[Endpoint]], OutputStream) => Unit = mm.write) =
     new Topology[A] with StrictLogging {
-    private val emptyEp: Option[Endpoint] = None
     private val index =
-      new AtomicReference[m.MultiMap[ReplicaSetId, Endpoint]](
-        new m.HashMap[ReplicaSetId, m.Set[Endpoint]]
-          with m.MultiMap[ReplicaSetId, Endpoint])
+      new AtomicReference[m.HashMap[ReplicaSetId, List[Endpoint]]](
+        new m.HashMap[ReplicaSetId, List[Endpoint]])
 
     def select(key: A) =
-      mapper(key).fold(emptyEp)(index.get.get(_).fold(emptyEp)(balance(_)))
+      mapper(key)
+        .fold(Option.empty[Endpoint])(
+          index.get.get(_).fold(Option.empty[Endpoint])(balance(_)))
 
     def read(in: InputStream) = update(reader(in))
 
@@ -108,7 +109,7 @@ object Topology {
     private [kroto] def add(ep: Endpoint) = synchronized {
       logger.debug(s"adding: ${ep.la.fold("")(_.value)} endpoint: ${ep.ep}")
       val i = index.get()
-      i.get(ep.id).fold(i.put(ep.id, m.Set(ep)))(s => i.put(ep.id, s + ep))
+      i.get(ep.id).fold(i.put(ep.id, List(ep)))(l => i.put(ep.id, l :+ ep))
     }
 
     private [kroto] def remove(la: LogicalAddress) = synchronized {
@@ -122,11 +123,10 @@ object Topology {
     }
 
     private def update(epl: List[Set[Endpoint]]) = synchronized {
-      val i = new m.HashMap[ReplicaSetId, m.Set[Endpoint]]
-        with m.MultiMap[ReplicaSetId, Endpoint]
+      val i = new m.HashMap[ReplicaSetId, List[Endpoint]]
       epl.foreach { set =>
         set.foreach { ep =>
-          i.get(ep.id).fold(i.put(ep.id, m.Set(ep)))(s => i.put(ep.id, s + ep))
+          i.get(ep.id).fold(i.put(ep.id, List(ep)))(l => i.put(ep.id, l :+ ep))
         }
       }
       index.set(i)
