@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
     Copyright 2018 streamz.io
-    KROTO: Klustering ROuter TOpology
+    Cluster Hash Ring Router based on JGroups
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,15 +16,13 @@
     limitations under the License.
 --------------------------------------------------------------------------------
 */
-package io.streamz.kroto
+package io.streamz.kroto.server
 
-import io.streamz.kroto.server.Telnet
+sealed trait Command
+case object TopologyCommand extends Command
+case object RouteCommand extends Command
+case class ShellCommand(cmd: Command, args: List[String])
 
-object Main extends App {
-  private val server = Telnet(this.args)
-  Runtime.getRuntime.addShutdownHook(new Thread {
-    override def run() = {
-      server.foreach(_.close())
-    }
-  })
+object Command {
+  type Handler = (ShellCommand, Session) => Unit
 }

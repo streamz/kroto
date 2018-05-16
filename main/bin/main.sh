@@ -125,7 +125,7 @@ function run()
     checkEnvironment
     checkStartFlags
 
-    APP_ARGS="-e ${ENDPOINT} -g ${GROUP} -r ${REP} -p ${T_PORT} -s ${REPS}"
+    APP_ARGS="-e ${ENDPOINT} -g ${GROUP} -r ${REPS} -p ${T_PORT}"
 
     if [ -z "${QUERY_STRING}" ]; then
         APP_ARGS="${APP_ARGS} -u ${PROTO}://localhost:${PORT}"

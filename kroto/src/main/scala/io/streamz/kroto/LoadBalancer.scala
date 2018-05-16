@@ -30,8 +30,6 @@ object LoadBalancer {
       case 0 => None
       case 1 => endpoints.headOption
       case n: Int =>
-        val rng = XorShiftRng.nextInt(n)
-        println(s"------ RNG: $rng")
-        Some(endpoints(rng))
+        Some(endpoints(XorShiftRng.nextInt(100) % n))
     }
 }

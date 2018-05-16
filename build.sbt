@@ -12,7 +12,7 @@ val kroto = global(project in file("kroto"), "core")
 val main = global(project in file("main"), "main")
   .settings(
     libraryDependencies ++= Seq(
-      "com.github.scopt" %% "scopt" % "3.3.0",
+      "org.jline" % "jline" % "3.7.0",
       "org.slf4j" % "slf4j-simple" % "1.7.25"))
   .settings(
     artifact in (Compile, assembly) := {
