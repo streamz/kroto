@@ -20,6 +20,6 @@ package io.streamz.kroto
 
 import org.specs2.mutable.Specification
 
-class RouterSpec extends Specification {
+class SelectorSpec extends Specification {
 
 }

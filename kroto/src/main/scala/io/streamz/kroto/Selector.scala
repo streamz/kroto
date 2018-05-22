@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
     Copyright 2018 streamz.io
-    Cluster Hash Ring Router based on JGroups
+    KROTO: Klustering ROuter TOpology
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,18 +16,24 @@
     limitations under the License.
 --------------------------------------------------------------------------------
 */
-package io.streamz.kroto.impl
+package io.streamz.kroto
 
-import org.specs2.mutable.Specification
+import io.streamz.kroto.impl.Group
 
-case class Node(primary: String, secondary: String)
+trait Selector[A] extends AutoCloseable {
+  def start(): Unit
+  def select(key: A): Option[Endpoint]
+}
 
-class HashRingSpec extends Specification {
-  private val ring = new HashRing[Node](197)
-  private val nodes = 0 until 12 map(i => Node(s"prim-$i", s"sec-$i"))
-  nodes.foreach(ring += _)
+object Selector {
+  def apply[A](
+    serviceEndpoint: Endpoint,
+    group: Group[A]): Selector[A] = new Selector[A] {
 
-  "HashRing.apply" ! {
-    ring("foo").get ==== nodes(6)
+    def start(): Unit = group.join(serviceEndpoint)
+    def select(key: A): Option[Endpoint] = group.topology().select(key)
+    def close(): Unit = group.leave()
+
+    override def toString = group.topology().toString
   }
 }

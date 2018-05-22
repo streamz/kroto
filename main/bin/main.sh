@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+#./main.sh -port=8000 -group=foobar -proto=udp -endpoint=http://localhost:8081 -debug=5005 -tport=8800 -replicas=s1,s2,s3
+
 JCMD=
 KROTO_HOME=../target/scala-2.11
 APP_ARGS=
@@ -42,9 +44,6 @@ while [ "$1" != "" ]; do
             ;;
         -group)
             GROUP="${VALUE}"
-            ;;
-        -replica)
-            REP="${VALUE}"
             ;;
          -replicas)
             REPS="${VALUE}"
@@ -96,11 +95,6 @@ function checkStartFlags()
     if [ -z "${GROUP}" ]; then
         usage
         echo "ERROR: No group name specified"
-        exit 1
-    fi
-    if [ -z "${REP}" ]; then
-        usage
-        echo "ERROR: No replica set Id specified"
         exit 1
     fi
     if [ -z "${REPS}" ]; then

@@ -18,25 +18,14 @@
 */
 package io.streamz.kroto
 
-import io.streamz.kroto.impl.Group
+import io.streamz.kroto.impl.XorShiftRng
 
-trait Router[A] extends AutoCloseable {
-  def isLeader: Boolean
-  def start(): Unit
-  def route(key: A): Option[Endpoint]
-}
-
-object Router {
-  def apply[A](
-    serviceEndpoint: Endpoint,
-    group: Group[A]): Router[A] = new Router[A] {
-
-    def start(): Unit = group.join(serviceEndpoint)
-    def route(key: A): Option[Endpoint] = group.topology().select(key)
-    def isLeader: Boolean = group.isLeader
-    def close(): Unit = group.leave()
-
-    override
-    def toString = group.topology().toString
-  }
+object LoadBalancers {
+  def random = (endpoints: List[Endpoint]) =>
+    endpoints.size match {
+      case 0 => None
+      case 1 => endpoints.headOption
+      case n: Int =>
+        Some(endpoints(XorShiftRng.nextInt(100) % n))
+    }
 }

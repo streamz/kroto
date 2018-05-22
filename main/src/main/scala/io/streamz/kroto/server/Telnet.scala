@@ -18,7 +18,7 @@
 */
 package io.streamz.kroto.server
 
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 import io.streamz.kroto._
 import io.streamz.kroto.impl.Group
@@ -29,24 +29,23 @@ import scala.collection.mutable
 object Telnet {
   def apply(args: Array[String]): Option[AutoCloseable] =
     CmdLineParser.parse(args).fold(Option.empty[AutoCloseable]) { c =>
-      def newRouter: Option[Router[String]] = {
+      val mapRef = new AtomicReference[Map[String, ReplicaSetId]]
+
+      def newRouter: Option[Selector[String]] = {
         val replicas: Map[Int, ReplicaSetId] =
           c.rids.zipWithIndex.map(_.swap).toMap
         val g = Group(
           c.uri,
           c.gid,
           Topology(
-            (s: String) => {
-              if (replicas.isEmpty) None
-              else Some(replicas(s.hashCode % replicas.size))
-            },
-            LoadBalancer.random))
-        g.fold(Option.empty[Router[String]]) { f =>
-          Some(Router(Endpoint(c.ep, replicas(0)), f))
+            Mappers.mapped(mapRef),
+            LoadBalancers.random))
+        g.fold(Option.empty[Selector[String]]) { f =>
+          Some(Selector(Endpoint(c.ep, replicas(0)), f))
         }
       }
 
-      newRouter.fold(Option.empty[AutoCloseable]) { router =>
+      newRouter.fold(Option.empty[AutoCloseable]) { selector =>
         val ac = Some(new AutoCloseable {
           private val sessions = new mutable.HashSet[Session]
           private val shuttingDown = new AtomicBoolean(false)
@@ -54,16 +53,21 @@ object Telnet {
           portListener.setConnectionManager(
             new SessionManager((cmd: ShellCommand, s: Session) => {
               cmd.cmd match {
-                case RouteCommand =>
+                case SelectorCommand =>
                   val ep = cmd.args.headOption
-                    .fold(Option.empty[Endpoint])(router.route)
-                  ep.fold(s.println("no route found")) { f =>
+                    .fold(Option.empty[Endpoint])(selector.select)
+                  ep.fold(s.println("no endpoint found")) { f =>
                     s.println(s"endpoint: ${f.ep.toASCIIString}")
                     s.println(s"replica:  ${f.id.value}")
                   }
                 case TopologyCommand =>
-                  s.println("router topology:")
-                  s.println(router.toString)
+                  s.println("topology:")
+                  s.println(selector.toString)
+                case MapCommand =>
+                  val m = Command.parseMap(cmd.args)
+                  s.println("new mapping:")
+                  s.println(m.mkString("\n"))
+                  mapRef.set(m)
                 case _ =>
               }
             }))
@@ -78,7 +82,7 @@ object Telnet {
             session.close()
             sessions.remove(session)
           }
-          router.start()
+          selector.start()
           portListener.start()
         })
         ac

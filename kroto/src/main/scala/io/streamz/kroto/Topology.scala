@@ -89,8 +89,7 @@ object Topology {
         .find(ep => ep.la.fold(false)(a => a.value.equals(la.value)))
     }
 
-    override
-    def toString = {
+    override def toString = {
       val sb = new StringBuilder
       index.get().foreach { set =>
         sb.append("replicaSetId: ")

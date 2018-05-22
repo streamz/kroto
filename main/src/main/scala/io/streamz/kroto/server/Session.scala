@@ -29,18 +29,19 @@ object Session {
   val banner =
     "    _...._\n" +
     "  .'   \\ _'.\n" +
-    " /##\\__/##\\_\\        __             __     \n" +
-    "|\\##/  \\##/  |      / /__ _______  / /____ \n" +
-    "|/  \\__/  \\ _|     /  '_// __/ _ \\/ __/ _ \\\n" +
-    " \\ _/##\\__/#/     /_/\\_\\/_/  \\___/\\__/\\___/\n" +
-    "  '.\\##/__.'\n" +
+    " /##\\__/##\\_\\      __             __     \n" +
+    "|\\##/  \\##/  |    / /__ _______  / /____ \n" +
+    "|/  \\__/  \\ _|   /  '_// __/ _ \\/ __/ _ \\\n" +
+    " \\ _/##\\__/#/   /_/\\_\\/_/  \\___/\\__/\\___/\n" +
+    "  '.\\##/__.'          selector topology test app\n" +
     "    `\"\"\"\"`"
 
   val help = Array(
     "kroto shell",
     "Usage: kroto> [help] [top] [route <key>]\n" +
-    "  route <key>   show where a key will be routed",
+    "  select <key>  show the selected endpoint for key",
     "  top           show the kroto routing topology",
+    "  map <k=v k=v> sets the key mapping for the the topology",
     "  help          show help").mkString("\n")
 }
 //noinspection ConvertExpressionToSAM
@@ -64,8 +65,11 @@ class Session private [server] (
         val len = cmd.length
         val command = cmd.headOption.fold(Option.empty[ShellCommand]) {
           case "top" => Some(ShellCommand(TopologyCommand, List.empty))
-          case "route" =>
-            if (len == 2) Some(ShellCommand(RouteCommand, cmd.tail.toList))
+          case "select" =>
+            if (len == 2) Some(ShellCommand(SelectorCommand, cmd.tail.toList))
+            else Option.empty[ShellCommand]
+          case "map" =>
+            if (len > 1) Some(ShellCommand(MapCommand, cmd.tail.toList))
             else Option.empty[ShellCommand]
           case "help" =>
             println(Session.help)

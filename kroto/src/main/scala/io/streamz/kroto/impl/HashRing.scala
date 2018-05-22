@@ -61,14 +61,14 @@ class HashRing[A] private [impl] (replicas: Int) {
     }
   }
 
-  def apply(key: String): A = {
+  def apply(key: String): Option[A] = {
     val bKey = key.getBytes("UTF-8")
     val hash = hashFor(bKey)
-    if (keys.contains(hash)) ring(hash)
+    if (keys.contains(hash)) ring.get(hash)
     else {
-      if (hash < keys.firstKey) ring(keys.firstKey)
-      else if (hash > keys.lastKey) ring(keys.lastKey)
-      else ring(keys.rangeImpl(None, Some(hash)).lastKey)
+      if (hash < keys.firstKey) ring.get(keys.firstKey)
+      else if (hash > keys.lastKey) ring.get(keys.lastKey)
+      else ring.get(keys.rangeImpl(None, Some(hash)).lastKey)
     }
   }
 

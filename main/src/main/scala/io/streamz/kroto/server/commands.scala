@@ -18,11 +18,22 @@
 */
 package io.streamz.kroto.server
 
+import io.streamz.kroto.ReplicaSetId
+
 sealed trait Command
 case object TopologyCommand extends Command
-case object RouteCommand extends Command
+case object SelectorCommand extends Command
+case object MapCommand extends Command
 case class ShellCommand(cmd: Command, args: List[String])
 
 object Command {
   type Handler = (ShellCommand, Session) => Unit
+
+  def parseMap(args: List[String]): Map[String, ReplicaSetId] = {
+    args.flatMap { f =>
+      val arr = f.trim.split("=")
+      if (arr.length == 2) Some(arr(0).trim -> ReplicaSetId(arr(1).trim))
+      else None
+    }.toMap
+  }
 }
