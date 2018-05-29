@@ -16,7 +16,7 @@
     limitations under the License.
 --------------------------------------------------------------------------------
 */
-package io.streamz.kroto.impl
+package io.streamz.kroto.internal
 
 import scala.collection.immutable.Seq
 import scala.collection.{mutable => m}
@@ -27,7 +27,7 @@ object HashRing {
   def apply[A](points: Seq[A], replicas: Int) = new HashRing[A](points, replicas)
 }
 
-class HashRing[A] private [impl] (replicas: Int) {
+class HashRing[A] private [internal](replicas: Int) {
   private val delimiter = "-"
   private val buffer = m.Buffer[A]()
   private var keys = m.TreeSet[Int]()

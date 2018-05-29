@@ -16,29 +16,28 @@
     limitations under the License.
 --------------------------------------------------------------------------------
 */
-package io.streamz.kroto.impl
+package io.streamz.kroto.internal
 
-object XorShiftRng {
-  private val RND = new ThreadLocal[XorShiftRng] {
-    override def initialValue() = new XorShiftRng
-  }
-  def nextInt(until: Int) = RND.get().nextInt(until)
-}
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.locks.LockSupport
 
-private class XorShiftRng {
-  private var seed = System.nanoTime()
-
-  def nextInt(n: Int) = {
-    if (n <= 0) throw new IllegalArgumentException
-    ((nextLong >>> 1) % n).toInt
-  }
-
-  def nextLong = {
-    seed ^= seed >>> 12
-    seed ^= seed << 25
-    Long.MaxValue * {
-      seed ^= (seed >>> 27)
-      seed
+class SPSCQueue[A](fn: A => Unit, depth: Int) extends AutoCloseable {
+  private val queue = new ArrayBlockingQueue[A](depth)
+  private val running = new AtomicBoolean(true)
+  private val thread = new Thread(new Runnable {
+    override def run() = {
+      while (running.get()) {
+        val a = queue.poll()
+        if (a != null) fn(a)
+        LockSupport.parkNanos(1)
+      }
     }
-  }
+  })
+
+  thread.setDaemon(true)
+  thread.start()
+
+  def push(a: A): Boolean = queue.add(a)
+  def close() = running.set(false)
 }

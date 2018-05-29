@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.collection.{mutable => m}
-import io.streamz.kroto.impl.{Marshaller => mm}
+import io.streamz.kroto.internal.{Marshaller => mm}
 
 trait Topology[A] {
   /**

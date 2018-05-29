@@ -18,8 +18,28 @@
 */
 package io.streamz.kroto
 
+import java.net.URI
+
 import org.specs2.mutable.Specification
 
-class TopologySpec extends Specification {
+class LoadBalancerSpec extends Specification {
+  val endpoint0 = Endpoint(
+    new URI("http://streamz.io"),
+    ReplicaSetId("r0"),
+    Some(LogicalAddress("1234")))
+  val endpoint1 = Endpoint(
+      new URI("http://streamz.io"),
+      ReplicaSetId("r0"),
+      Some(LogicalAddress("5678")))
 
+  "A random load balancer with a single endpoint returns the endpoint" ! {
+    LoadBalancer.random(List(endpoint0))
+      .fold(endpoint1)(identity) ==== endpoint0
+  }
+
+  "A random load balancer with a multiple endpoints returns an endpoint" ! {
+    val res = LoadBalancer.random(List(endpoint0, endpoint1))
+      .fold(endpoint1)(identity)
+    (res == endpoint0 || res == endpoint1) ==== true
+  }
 }

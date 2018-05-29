@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
     Copyright 2018 streamz.io
-    KROTO: Klustering ROuter TOpology
+    Cluster Hash Ring Router based on JGroups
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,29 +16,10 @@
     limitations under the License.
 --------------------------------------------------------------------------------
 */
-package io.streamz.kroto
+package io.streamz.kroto.internal
 
-import java.util.concurrent.atomic.AtomicReference
+import org.specs2.mutable.Specification
 
-import io.streamz.kroto.internal.HashRing
+class URIUtilSpec extends Specification {
 
-object Mappers {
-  def mod[A](
-    r: Map[Int, ReplicaSetId],
-    f: A => Int): A => Option[ReplicaSetId] =
-    (a: A) => {
-      if (r.isEmpty) None
-      else Some(r(f(a) % r.size))
-    }
-
-  def ring[A](
-    r: Map[Int, ReplicaSetId],
-    f: A => String): A => Option[ReplicaSetId] = {
-    val ring = new HashRing[ReplicaSetId](r.values.toList, 197)
-    a: A => ring(f(a))
-  }
-
-  def mapped[A](
-    m: AtomicReference[Map[A, ReplicaSetId]]): A => Option[ReplicaSetId] =
-    (a: A) => m.get.get(a)
 }

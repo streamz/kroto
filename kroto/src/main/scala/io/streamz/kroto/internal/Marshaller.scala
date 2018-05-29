@@ -16,7 +16,7 @@
     limitations under the License.
 --------------------------------------------------------------------------------
 */
-package io.streamz.kroto.impl
+package io.streamz.kroto.internal
 
 import java.io.{DataInputStream, DataOutputStream, InputStream, OutputStream}
 import java.net.URI

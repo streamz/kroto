@@ -18,27 +18,14 @@
 */
 package io.streamz.kroto
 
-import java.util.concurrent.atomic.AtomicReference
+import io.streamz.kroto.internal.XorShiftRng
 
-import io.streamz.kroto.internal.HashRing
-
-object Mappers {
-  def mod[A](
-    r: Map[Int, ReplicaSetId],
-    f: A => Int): A => Option[ReplicaSetId] =
-    (a: A) => {
-      if (r.isEmpty) None
-      else Some(r(f(a) % r.size))
+object LoadBalancer {
+  def random = (endpoints: List[Endpoint]) =>
+    endpoints.size match {
+      case 0 => None
+      case 1 => endpoints.headOption
+      case n: Int =>
+        Some(endpoints(XorShiftRng.nextInt(100) % n))
     }
-
-  def ring[A](
-    r: Map[Int, ReplicaSetId],
-    f: A => String): A => Option[ReplicaSetId] = {
-    val ring = new HashRing[ReplicaSetId](r.values.toList, 197)
-    a: A => ring(f(a))
-  }
-
-  def mapped[A](
-    m: AtomicReference[Map[A, ReplicaSetId]]): A => Option[ReplicaSetId] =
-    (a: A) => m.get.get(a)
 }

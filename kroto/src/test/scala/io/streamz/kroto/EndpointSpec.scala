@@ -16,18 +16,18 @@
     limitations under the License.
 --------------------------------------------------------------------------------
 */
-package io.streamz.kroto.impl
+package io.streamz.kroto
+
+import java.net.URI
 
 import org.specs2.mutable.Specification
 
-case class Node(primary: String, secondary: String)
-
-class HashRingSpec extends Specification {
-  private val ring = new HashRing[Node](197)
-  private val nodes = 0 until 12 map(i => Node(s"prim-$i", s"sec-$i"))
-  nodes.foreach(ring += _)
-
-  "HashRing.apply" ! {
-    ring("foo").get ==== nodes(6)
+class EndpointSpec extends Specification {
+  "An Endpoint can be encoded and decoded" ! {
+    val ep = Endpoint(
+      new URI("http://streamz.io"),
+      ReplicaSetId("r0"),
+      Some(LogicalAddress("123456")))
+    ep ==== Endpoint.fromBuffer(Endpoint.toBuffer(ep))
   }
 }

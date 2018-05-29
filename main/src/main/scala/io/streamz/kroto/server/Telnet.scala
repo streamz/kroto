@@ -21,7 +21,7 @@ package io.streamz.kroto.server
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 import io.streamz.kroto._
-import io.streamz.kroto.impl.Group
+import io.streamz.kroto.internal.Group
 import org.jline.builtins.telnet._
 
 import scala.collection.mutable
@@ -31,7 +31,7 @@ object Telnet {
     CmdLineParser.parse(args).fold(Option.empty[AutoCloseable]) { c =>
       val mapRef = new AtomicReference[Map[String, ReplicaSetId]]
 
-      def newRouter: Option[Selector[String]] = {
+      def newSelector: Option[Selector[String]] = {
         val replicas: Map[Int, ReplicaSetId] =
           c.rids.zipWithIndex.map(_.swap).toMap
         val g = Group(
@@ -39,13 +39,13 @@ object Telnet {
           c.gid,
           Topology(
             Mappers.mapped(mapRef),
-            LoadBalancers.random))
+            LoadBalancer.random))
         g.fold(Option.empty[Selector[String]]) { f =>
           Some(Selector(Endpoint(c.ep, replicas(0)), f))
         }
       }
 
-      newRouter.fold(Option.empty[AutoCloseable]) { selector =>
+      newSelector.fold(Option.empty[AutoCloseable]) { selector =>
         val ac = Some(new AutoCloseable {
           private val sessions = new mutable.HashSet[Session]
           private val shuttingDown = new AtomicBoolean(false)

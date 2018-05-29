@@ -18,7 +18,7 @@
 */
 package io.streamz.kroto
 
-import io.streamz.kroto.impl.Group
+import io.streamz.kroto.internal.Group
 
 trait Selector[A] extends AutoCloseable {
   def start(): Unit

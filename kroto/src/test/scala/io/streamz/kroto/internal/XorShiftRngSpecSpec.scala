@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
     Copyright 2018 streamz.io
-    KROTO: Klustering ROuter TOpology
+    Cluster Hash Ring Router based on JGroups
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,28 +16,16 @@
     limitations under the License.
 --------------------------------------------------------------------------------
 */
-package io.streamz.kroto.impl
+package io.streamz.kroto.internal
 
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.locks.LockSupport
+import org.specs2.mutable.Specification
 
-class SPSCQueue[A](fn: A => Unit, depth: Int) extends AutoCloseable {
-  private val queue = new ArrayBlockingQueue[A](depth)
-  private val running = new AtomicBoolean(true)
-  private val thread = new Thread(new Runnable {
-    override def run() = {
-      while (running.get()) {
-        val a = queue.poll()
-        if (a != null) fn(a)
-        LockSupport.parkNanos(1)
-      }
-    }
-  })
-
-  thread.setDaemon(true)
-  thread.start()
-
-  def push(a: A): Boolean = queue.add(a)
-  def close() = running.set(false)
+class XorShiftRngSpecSpec extends Specification {
+  "generates a random integer with an even distribution" ! {
+    val iterations = 1000000
+    val seq = for (_ <- 0 to iterations) yield XorShiftRng.nextInt(100)
+    val res = seq.groupBy(identity).mapValues(_.size)
+    val mean = res.map(kv => kv._1 * kv._2).sum / iterations
+    mean mustEqual 49
+  }
 }

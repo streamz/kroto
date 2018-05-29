@@ -16,29 +16,29 @@
     limitations under the License.
 --------------------------------------------------------------------------------
 */
-package io.streamz.kroto
+package io.streamz.kroto.internal
 
-import java.util.concurrent.atomic.AtomicReference
+object XorShiftRng {
+  private val RND = new ThreadLocal[XorShiftRng] {
+    override def initialValue() = new XorShiftRng
+  }
+  def nextInt(until: Int) = RND.get().nextInt(until)
+}
 
-import io.streamz.kroto.internal.HashRing
+private class XorShiftRng {
+  private var seed = System.nanoTime()
 
-object Mappers {
-  def mod[A](
-    r: Map[Int, ReplicaSetId],
-    f: A => Int): A => Option[ReplicaSetId] =
-    (a: A) => {
-      if (r.isEmpty) None
-      else Some(r(f(a) % r.size))
-    }
-
-  def ring[A](
-    r: Map[Int, ReplicaSetId],
-    f: A => String): A => Option[ReplicaSetId] = {
-    val ring = new HashRing[ReplicaSetId](r.values.toList, 197)
-    a: A => ring(f(a))
+  def nextInt(n: Int) = {
+    if (n <= 0) throw new IllegalArgumentException
+    ((nextLong >>> 1) % n).toInt
   }
 
-  def mapped[A](
-    m: AtomicReference[Map[A, ReplicaSetId]]): A => Option[ReplicaSetId] =
-    (a: A) => m.get.get(a)
+  def nextLong = {
+    seed ^= seed >>> 12
+    seed ^= seed << 25
+    Long.MaxValue * {
+      seed ^= (seed >>> 27)
+      seed
+    }
+  }
 }
