@@ -121,7 +121,7 @@ object Topology {
       }
     }
 
-    private def update(epl: List[Set[Endpoint]]) = synchronized {
+    private [kroto] def update(epl: List[Set[Endpoint]]) = synchronized {
       val i = new m.HashMap[ReplicaSetId, List[Endpoint]]
       epl.foreach { set =>
         set.foreach { ep =>

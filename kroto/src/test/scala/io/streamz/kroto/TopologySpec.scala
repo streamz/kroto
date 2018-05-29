@@ -42,32 +42,45 @@ class TopologySpec extends Specification {
     ReplicaSetId("r3"),
     Some(LogicalAddress("1112")))
 
-  val top = Topology(
-    Mappers.mapped(
-      new AtomicReference(
-        Map[Int, ReplicaSetId](
-        0 -> ReplicaSetId("r0"),
-        1 -> ReplicaSetId("r1"),
-        2 -> ReplicaSetId("r2"),
-        3 -> ReplicaSetId("r3")))),
-    LoadBalancer.random,
-    Marshaller.read,
-    Marshaller.write
-  )
+  def top() = {
+    val t = Topology(
+      Mappers.mapped(
+        new AtomicReference(
+          Map[Int, ReplicaSetId](
+            0 -> ReplicaSetId("r0"),
+            1 -> ReplicaSetId("r1"),
+            2 -> ReplicaSetId("r2"),
+            3 -> ReplicaSetId("r3")))),
+      LoadBalancer.random,
+      Marshaller.read,
+      Marshaller.write
+    )
+    t.add(endpoint0)
+    t.add(endpoint1)
+    t.add(endpoint2)
+    t.add(endpoint3)
+    t
+  }
 
-  top.add(endpoint0)
-  top.add(endpoint1)
-  top.add(endpoint2)
-  top.add(endpoint3)
+  "A topology selects nodes" ! {
+    val t = top()
+    t.select(0).fold(endpoint1)(identity) ==== endpoint0
+    t.select(1).fold(endpoint1)(identity) ==== endpoint1
+    t.select(2).fold(endpoint1)(identity) ==== endpoint2
+    t.select(3).fold(endpoint1)(identity) ==== endpoint3
+  }
 
-  "A topology manages connected nodes" ! {
-    top.select(0).fold(endpoint1)(identity) ==== endpoint0
-    top.select(1).fold(endpoint1)(identity) ==== endpoint1
-    top.select(2).fold(endpoint1)(identity) ==== endpoint2
-    top.select(3).fold(endpoint1)(identity) ==== endpoint3
-    top.find(LogicalAddress("1234")).fold(endpoint1)(identity) ==== endpoint0
-    top.find(LogicalAddress("5678")).fold(endpoint1)(identity) ==== endpoint1
-    top.find(LogicalAddress("9101")).fold(endpoint1)(identity) ==== endpoint2
-    top.find(LogicalAddress("1112")).fold(endpoint1)(identity) ==== endpoint3
+  "A topology finds nodes" ! {
+    val t = top()
+    t.find(LogicalAddress("1234")).fold(endpoint1)(identity) ==== endpoint0
+    t.find(LogicalAddress("5678")).fold(endpoint1)(identity) ==== endpoint1
+    t.find(LogicalAddress("9101")).fold(endpoint1)(identity) ==== endpoint2
+    t.find(LogicalAddress("1112")).fold(endpoint1)(identity) ==== endpoint3
+  }
+
+  "A topology removes and can not find a node" ! {
+    val t = top()
+    t.remove(LogicalAddress("1112"))
+    t.select(3) ==== None
   }
 }
