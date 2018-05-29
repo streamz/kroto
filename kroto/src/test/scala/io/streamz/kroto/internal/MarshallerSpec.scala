@@ -16,30 +16,32 @@
     limitations under the License.
 --------------------------------------------------------------------------------
 */
-package io.streamz.kroto
+package io.streamz.kroto.internal
 
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.net.URI
 
+import io.streamz.kroto.{Endpoint, LogicalAddress, ReplicaSetId}
 import org.specs2.mutable.Specification
 
-class LoadBalancerSpec extends Specification {
+class MarshallerSpec extends Specification {
   val endpoint0 = Endpoint(
     new URI("http://r0.streamz.io"),
     ReplicaSetId("r0"),
     Some(LogicalAddress("1234")))
   val endpoint1 = Endpoint(
-      new URI("http://r1.streamz.io"),
-      ReplicaSetId("r1"),
-      Some(LogicalAddress("5678")))
+    new URI("http://r1.streamz.io"),
+    ReplicaSetId("r1"),
+    Some(LogicalAddress("5678")))
 
-  "A random load balancer with a single endpoint returns the endpoint" ! {
-    LoadBalancer.random(List(endpoint0))
-      .fold(endpoint1)(identity) ==== endpoint0
-  }
-
-  "A random load balancer with a multiple endpoints returns an endpoint" ! {
-    val res = LoadBalancer.random(List(endpoint0, endpoint1))
-      .fold(endpoint1)(identity)
-    (res == endpoint0 || res == endpoint1) ==== true
+  "A marshaller can marshall a list of sets" ! {
+    val os = new ByteArrayOutputStream()
+    Marshaller.write(List(Set(endpoint0, endpoint1)), os)
+    val is = new ByteArrayInputStream(os.toByteArray)
+    val res = Marshaller.read(is).flatMap(_.map(identity))
+    os.close()
+    is.close()
+    res.contains(endpoint0) ==== true
+    res.contains(endpoint1) ==== true
   }
 }

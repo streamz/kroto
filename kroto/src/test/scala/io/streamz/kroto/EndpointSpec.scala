@@ -25,7 +25,7 @@ import org.specs2.mutable.Specification
 class EndpointSpec extends Specification {
   "An Endpoint can be encoded and decoded" ! {
     val ep = Endpoint(
-      new URI("http://streamz.io"),
+      new URI("http://r0.streamz.io"),
       ReplicaSetId("r0"),
       Some(LogicalAddress("123456")))
     ep ==== Endpoint.fromBuffer(Endpoint.toBuffer(ep))

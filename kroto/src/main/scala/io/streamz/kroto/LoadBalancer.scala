@@ -21,7 +21,7 @@ package io.streamz.kroto
 import io.streamz.kroto.internal.XorShiftRng
 
 object LoadBalancer {
-  def random = (endpoints: List[Endpoint]) =>
+  val random = (endpoints: List[Endpoint]) =>
     endpoints.size match {
       case 0 => None
       case 1 => endpoints.headOption
