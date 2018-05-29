@@ -39,8 +39,12 @@ object Group {
     id: GroupId,
     top: Topology[A]): Option[Group[A]] =
     ProtocolInfo(uri, id).fold(Option.empty[Group[A]]) { p =>
-    import org.jgroups.conf.ClassConfigurator
-    ClassConfigurator.add(MessageHeader.magicId, classOf[MessageHeader])
+    try {
+      import org.jgroups.conf.ClassConfigurator
+      ClassConfigurator.add(MessageHeader.magicId, classOf[MessageHeader])
+    } catch {
+      case _: Throwable => // eat it
+    }
     Some {
       new Group[A] with Receiver with StrictLogging {
         private val jc = new JChannel(p.get: _*)
