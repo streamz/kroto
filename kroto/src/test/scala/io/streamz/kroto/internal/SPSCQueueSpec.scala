@@ -33,6 +33,7 @@ class SPSCQueueSpec extends Specification {
       l.countDown()
     })
     l.await()
+    q.close()
     b.get() ==== true
   }
 }
