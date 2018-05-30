@@ -45,6 +45,12 @@ case object Hello extends Msg {
 case class GroupId(value: String) extends AnyVal
 
 /**
+  * A mapping of ReplicaSetId(s)
+  * @param value map
+  */
+case class ReplicaSet[A](value: Map[A, ReplicaSetId]) extends AnyVal
+
+/**
   * The Id of the replica set
   * @param value string id
   */

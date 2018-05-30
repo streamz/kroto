@@ -45,12 +45,12 @@ class TopologySpec extends Specification {
   def top() = {
     val t = Topology(
       Mappers.mapped(
-        new AtomicReference(
-          Map[Int, ReplicaSetId](
+        new AtomicReference(ReplicaSet[Int](
+          Map(
             0 -> ReplicaSetId("r0"),
             1 -> ReplicaSetId("r1"),
             2 -> ReplicaSetId("r2"),
-            3 -> ReplicaSetId("r3")))),
+            3 -> ReplicaSetId("r3"))))),
       LoadBalancer.random,
       Marshaller.read,
       Marshaller.write

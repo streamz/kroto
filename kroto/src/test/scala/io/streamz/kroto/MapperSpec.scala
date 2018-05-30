@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference
 import org.specs2.mutable.Specification
 
 class MapperSpec extends Specification {
-  val map = Map[Int, ReplicaSetId](
+  val rset = ReplicaSet(Map[Int, ReplicaSetId](
     0 -> ReplicaSetId("r0"),
     1 -> ReplicaSetId("r1"),
     2 -> ReplicaSetId("r2"),
@@ -33,21 +33,21 @@ class MapperSpec extends Specification {
     6 -> ReplicaSetId("r6"),
     7 -> ReplicaSetId("r7"),
     8 -> ReplicaSetId("r8"),
-    9 -> ReplicaSetId("r9"))
+    9 -> ReplicaSetId("r9")))
 
   "A mapper maps using a map" ! {
     Mappers.mapped(
-      new AtomicReference[Map[Int, ReplicaSetId]](map))(5)
+      new AtomicReference[ReplicaSet[Int]](rset))(5)
         .fold(ReplicaSetId("r0"))(identity) ==== ReplicaSetId("r5")
   }
 
   "A mapper maps using a modulus" ! {
-    Mappers.mod(map, (a: String) => Math.abs(a.hashCode))("io.streamz")
+    Mappers.mod(rset, (a: String) => Math.abs(a.hashCode))("io.streamz")
       .fold(ReplicaSetId("r0"))(identity) ==== ReplicaSetId("r6")
   }
 
   "A mapper maps using a hash ring" ! {
-    Mappers.ring(map, identity[String])("io.streamz")
+    Mappers.ring(rset, identity[String])("io.streamz")
       .fold(ReplicaSetId("r1"))(identity) ==== ReplicaSetId("r0")
   }
 }
