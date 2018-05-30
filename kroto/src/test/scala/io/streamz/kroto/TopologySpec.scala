@@ -44,7 +44,7 @@ class TopologySpec extends Specification {
 
   def top() = {
     val t = Topology(
-      Mappers.mapped(
+      Mappers.map(
         new AtomicReference(ReplicaSet[Int](
           Map(
             0 -> ReplicaSetId("r0"),

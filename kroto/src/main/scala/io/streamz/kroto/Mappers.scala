@@ -38,7 +38,7 @@ object Mappers {
     a: A => ring(f(a))
   }
 
-  def mapped[A](
+  def map[A](
     m: AtomicReference[ReplicaSet[A]]): A => Option[ReplicaSetId] =
     (a: A) => m.get.value.get(a)
 }

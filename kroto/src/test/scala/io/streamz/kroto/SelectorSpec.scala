@@ -62,7 +62,7 @@ class SelectorSpec extends Specification {
 
   private def top() = {
     val t = Topology(
-      Mappers.mapped(new AtomicReference(ReplicaSet[Int](
+      Mappers.map(new AtomicReference(ReplicaSet[Int](
         Map(0 -> endpoint0.id, 1 -> endpoint1.id)))),
       LoadBalancer.random,
       Marshaller.read,

@@ -36,7 +36,7 @@ class MapperSpec extends Specification {
     9 -> ReplicaSetId("r9")))
 
   "A mapper maps using a map" ! {
-    Mappers.mapped(
+    Mappers.map(
       new AtomicReference[ReplicaSet[Int]](rset))(5)
         .fold(ReplicaSetId("r0"))(identity) ==== ReplicaSetId("r5")
   }

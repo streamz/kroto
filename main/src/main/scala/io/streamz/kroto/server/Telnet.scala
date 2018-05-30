@@ -38,7 +38,7 @@ object Telnet {
           c.uri,
           c.gid,
           Topology(
-            Mappers.mapped(mapRef),
+            Mappers.map(mapRef),
             LoadBalancer.random))
         g.fold(Option.empty[Selector[String]]) { f =>
           Some(Selector(Endpoint(c.ep, replicas(0)), f))
