@@ -18,10 +18,18 @@
 */
 package io.streamz.kroto.internal
 
+import java.net.URI
+
 import org.specs2.mutable.Specification
 
 class URIUtilSpec extends Specification {
   "A URI can be parsed" ! {
-    true ==== true
+    val p0 = PortScanner.getFreePort.get
+    val p1 = PortScanner.getFreePort.get
+    val uri =
+      new URI(s"tcp://localhost:$p0?node=localhost:$p0&node=localhost:$p1")
+    val res = URIUtil.parseQuery(uri)
+    res.size ==== 1
+    res.get("node").fold(0)(_.size) ==== 2
   }
 }

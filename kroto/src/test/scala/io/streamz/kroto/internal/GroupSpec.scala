@@ -46,11 +46,13 @@ class GroupSpec extends Specification {
 
     val p0 = PortScanner.getFreePort.get
     val p1 = PortScanner.getFreePort.get
-    val uri0 = new URI(s"tcp://localhost:$p0?node=localhost:$p0&node=localhost:$p1")
+    val uri0 =
+      new URI(s"tcp://localhost:$p0?node=localhost:$p0&node=localhost:$p1")
     val id = GroupId("group-test")
     val group0 = Group(uri0, id, top())
 
-    val uri1 = new URI(s"tcp://localhost:$p1?node=localhost:$p0&node=localhost:$p1")
+    val uri1 =
+      new URI(s"tcp://localhost:$p1?node=localhost:$p0&node=localhost:$p1")
     val group1 = Group(uri1, id, top())
 
     group0.get.join(endpoint0)

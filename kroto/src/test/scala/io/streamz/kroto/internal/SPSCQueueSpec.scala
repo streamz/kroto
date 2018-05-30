@@ -18,10 +18,21 @@
 */
 package io.streamz.kroto.internal
 
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicBoolean
+
 import org.specs2.mutable.Specification
 
 class SPSCQueueSpec extends Specification {
-  "A SPSCQueueSpec can submit tasks" ! {
-    true ==== true
+  "A SPSCQueueSpec can submit and execute a task" ! {
+    val l = new CountDownLatch(1)
+    val b = new AtomicBoolean(false)
+    val q = new SPSCQueue[() => Unit]((fn: () => Unit) => fn(), 10)
+    q.push(() => {
+      b.set(true)
+      l.countDown()
+    })
+    l.await()
+    b.get() ==== true
   }
 }

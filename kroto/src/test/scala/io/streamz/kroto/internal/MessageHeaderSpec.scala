@@ -18,10 +18,24 @@
 */
 package io.streamz.kroto.internal
 
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
+
+import io.streamz.kroto.{Hello, Sync}
 import org.specs2.mutable.Specification
 
 class MessageHeaderSpec extends Specification {
   "A MessageHeader can be serialized and de-serialized" ! {
-    true ==== true
+    val hdr0 = new MessageHeader(Hello)
+    val hdr1 = new MessageHeader()
+    val ba = new ByteArrayOutputStream()
+    val os = new DataOutputStream(ba)
+
+    hdr0.writeTo(os)
+
+    val is = new DataInputStream(new ByteArrayInputStream(ba.toByteArray))
+    hdr1.readFrom(is)
+    os.close()
+    is.close()
+    hdr1.toMsg.fold(Sync.id)(_.id) ==== Hello.id
   }
 }
