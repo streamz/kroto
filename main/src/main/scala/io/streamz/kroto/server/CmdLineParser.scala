@@ -34,8 +34,7 @@ object CmdLineParser {
   def parse(args: Array[String]): Option[Config] = {
     val usage = Array(
       "krotod - start simple kroto daemon",
-      "Usage: krotod [-h host] [-p port] [-u uri] [-e endpoint] " +
-        "[-g group] [-r replicas]",
+      "Usage: krotod [-p port] [-u uri] [-e endpoint] [-g group] [-r replicas]",
       "  -p --port=Port         listen port",
       "  -u --uri=URI           cluster configuration uri",
       "  -e --endpoint=Endpoint service endpoint",

@@ -44,6 +44,11 @@ object ProtocolInfo {
       case _ => None
     }
   }
+  private def gms(): GMS = {
+    val p = new GMS
+    p.setPrintLocalAddr(false)
+    p
+  }
 
   private def tcpProto(uri: URI): Array[Protocol] = {
     val p = URIUtil.parseQuery(uri)
@@ -111,7 +116,7 @@ object ProtocolInfo {
       nakack2,
       new UNICAST3,
       stable,
-      new GMS,
+      gms(),
       new MFC_NB,
       new FRAG3,
       rsvp,
@@ -160,7 +165,7 @@ object ProtocolInfo {
       nakack2,
       new UNICAST3,
       stable,
-      new GMS,
+      gms(),
       new MFC_NB,
       new FRAG3,
       rsvp,

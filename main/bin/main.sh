@@ -1,26 +1,18 @@
 #!/usr/bin/env bash
 
-#./main.sh -port=8000 -group=foobar -proto=udp -endpoint=http://localhost:8081 -debug=5005 -tport=8800 -replicas=s1,s2,s3
-
 JCMD=
 KROTO_HOME=../target/scala-2.11
 APP_ARGS=
-DAEMON=
-JMX=
-NAME=
-PORT=
 GROUP=
-PROTO=
 REP=
 REPS=
 START=
 WORK=
 EXT=
 PID=
+URI=
 ENDPOINT=
 QUERY_STRING=
-LOG_OUT=
-LOG_ERR=
 T_PORT=
 LOG_LEVEL="info"
 JAVA_HOME=
@@ -36,23 +28,23 @@ while [ "$1" != "" ]; do
         -jmx)
             JMX="-Dcom.sun.management.jmxremote.port=${VALUE} -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"
             ;;
-        -port)
-            PORT="${VALUE}"
-            ;;
         -tport)
             T_PORT="${VALUE}"
             ;;
+        -uri)
+            URI=`echo ${1:5}`
+            ;;
         -group)
             GROUP="${VALUE}"
+            ;;
+        -query)
+            QUERY_STRING="${VALUE}"
             ;;
          -replicas)
             REPS="${VALUE}"
             ;;
         -endpoint)
             ENDPOINT="${VALUE}"
-            ;;
-        -proto)
-            PROTO="${VALUE}"
             ;;
         -loglevel)
             LOG_LEVEL="${VALUE}"
@@ -76,10 +68,10 @@ function checkEnvironment()
         exit 1
     fi
 
-    WORK="${KROTO_HOME}/"$(hostname)."${PORT}"
-    PID="${WORK}/streamz.${PORT}.pid"
-    LOG_OUT="${KROTO_HOME}/logs/${PORT}/kroto.out"
-    LOG_ERR="${KROTO_HOME}/logs/${PORT}/kroto.err"
+    WORK="${KROTO_HOME}/"$(hostname)."${T_PORT}"
+    PID="${WORK}/kroto.${T_PORT}.pid"
+    LOG_OUT="${KROTO_HOME}/logs/${T_PORT}/kroto.out"
+    LOG_ERR="${KROTO_HOME}/logs/${T_PORT}/kroto.err"
 
     echo "[shell] Setting work dir to ${WORK}..."
     echo "[shell] Setting PID to ${PID}..."
@@ -87,9 +79,9 @@ function checkEnvironment()
 
 function checkStartFlags()
 {
-    if [ -z "${PORT}" ]; then
+    if [ -z "${T_PORT}" ]; then
         usage
-        echo "ERROR: No port specified"
+        echo "ERROR: No telnet port specified"
         exit 1
     fi
     if [ -z "${GROUP}" ]; then
@@ -97,19 +89,14 @@ function checkStartFlags()
         echo "ERROR: No group name specified"
         exit 1
     fi
+    if [ -z "${URI}" ]; then
+        usage
+        echo "ERROR: No uri specified"
+        exit 1
+    fi
     if [ -z "${REPS}" ]; then
         usage
         echo "ERROR: No replica set specified"
-        exit 1
-    fi
-    if [ -z "${PROTO}" ]; then
-        usage
-        echo "ERROR: No protocol uri specified"
-        exit 1
-    fi
-    if [ -z "${T_PORT}" ]; then
-        usage
-        echo "ERROR: No tport specified"
         exit 1
     fi
 }
@@ -119,14 +106,7 @@ function run()
     checkEnvironment
     checkStartFlags
 
-    APP_ARGS="-e ${ENDPOINT} -g ${GROUP} -r ${REPS} -p ${T_PORT}"
-
-    if [ -z "${QUERY_STRING}" ]; then
-        APP_ARGS="${APP_ARGS} -u ${PROTO}://localhost:${PORT}"
-    else
-        APP_ARGS="${APP_ARGS} -u ${PROTO}://localhost:${PORT}/?${QUERY_STRING}"
-    fi
-
+    APP_ARGS="-e ${ENDPOINT} -g ${GROUP} -r ${REPS} -p ${T_PORT} -u ${URI}"
     JAVA_OPTS=" ${JAVA_OPTS} -Djava.net.preferIPv4Stack=true -Dorg.slf4j.simpleLogger.defaultLogLevel=${LOG_LEVEL}"
     JAVA_OPTS="-server -Xmx1g -Xms1g ${JAVA_OPTS}"
     JCMD="${JAVA_OPTS} ${JMX} -jar ${KROTO_HOME}/${APP_JAR} ${APP_ARGS}"

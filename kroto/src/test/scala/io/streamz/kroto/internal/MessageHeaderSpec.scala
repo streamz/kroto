@@ -16,12 +16,12 @@
     limitations under the License.
 --------------------------------------------------------------------------------
 */
-package io.streamz.kroto
+package io.streamz.kroto.internal
 
 import org.specs2.mutable.Specification
 
-class SelectorSpec extends Specification {
-  "A selector can select an endpoint" ! {
+class MessageHeaderSpec extends Specification {
+  "A MessageHeader can be serialized and de-serialized" ! {
     true ==== true
   }
 }

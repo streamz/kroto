@@ -21,5 +21,7 @@ package io.streamz.kroto.internal
 import org.specs2.mutable.Specification
 
 class URIUtilSpec extends Specification {
-
+  "A URI can be parsed" ! {
+    true ==== true
+  }
 }

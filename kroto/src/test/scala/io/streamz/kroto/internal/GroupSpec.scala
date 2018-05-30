@@ -41,13 +41,17 @@ class GroupSpec extends Specification {
     t
   }
 
-  "A UDP group can be joined" ! {
+  "A TCP group can be joined" ! {
     System.setProperty("java.net.preferIPv4Stack", "true")
 
-    val uri = new URI("udp://localhost")
+    val p0 = PortScanner.getFreePort.get
+    val p1 = PortScanner.getFreePort.get
+    val uri0 = new URI(s"tcp://localhost:$p0?node=localhost:$p0&node=localhost:$p1")
     val id = GroupId("group-test")
-    val group0 = Group(uri, id, top())
-    val group1 = Group(uri, id, top())
+    val group0 = Group(uri0, id, top())
+
+    val uri1 = new URI(s"tcp://localhost:$p1?node=localhost:$p0&node=localhost:$p1")
+    val group1 = Group(uri1, id, top())
 
     group0.get.join(endpoint0)
     group0.get.isLeader ==== true

@@ -16,12 +16,12 @@
     limitations under the License.
 --------------------------------------------------------------------------------
 */
-package io.streamz.kroto
+package io.streamz.kroto.internal
 
 import org.specs2.mutable.Specification
 
-class SelectorSpec extends Specification {
-  "A selector can select an endpoint" ! {
+class SPSCQueueSpec extends Specification {
+  "A SPSCQueueSpec can submit tasks" ! {
     true ==== true
   }
 }

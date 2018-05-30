@@ -16,12 +16,16 @@
     limitations under the License.
 --------------------------------------------------------------------------------
 */
-package io.streamz.kroto
+package io.streamz.kroto.internal
 
 import org.specs2.mutable.Specification
 
-class SelectorSpec extends Specification {
-  "A selector can select an endpoint" ! {
+class ProtocolInfoSpec extends Specification {
+  "A ProtocolInfoSpec can create a Udp stack" ! {
+    true ==== true
+  }
+
+  "A ProtocolInfoSpec can create a Tcp stack" ! {
     true ==== true
   }
 }
