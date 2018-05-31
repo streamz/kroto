@@ -38,10 +38,11 @@ object Session {
 
   val help = Array(
     "kroto shell",
-    "Usage: kroto> [help] [top] [route <key>]\n" +
+    "Usage: kroto> [help] [leader] [top] [map <k=v>] [select <key>]\n" +
     "  select <key>  show the selected endpoint for key",
-    "  top           show the kroto routing topology",
     "  map <k=v k=v> sets the key mapping for the the topology",
+    "  top           show the kroto routing topology",
+    "  leader        show the cluster leader",
     "  help          show help").mkString("\n")
 }
 //noinspection ConvertExpressionToSAM
@@ -65,6 +66,7 @@ class Session private [server] (
         val len = cmd.length
         val command = cmd.headOption.fold(Option.empty[ShellCommand]) {
           case "top" => Some(ShellCommand(TopologyCommand, List.empty))
+          case "leader" => Some(ShellCommand(LeaderCommand, List.empty))
           case "select" =>
             if (len == 2) Some(ShellCommand(SelectorCommand, cmd.tail.toList))
             else Option.empty[ShellCommand]

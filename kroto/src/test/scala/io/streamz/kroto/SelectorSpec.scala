@@ -26,6 +26,8 @@ import org.specs2.mutable.Specification
 
 
 class SelectorSpec extends Specification {
+  System.setProperty("java.net.preferIPv4Stack", "true")
+
   val uri0 = new URI("http://r0.streamz.io")
   val uri1 = new URI("http://r1.streamz.io")
   val endpoint0 = Endpoint(uri0, ReplicaSetId("r0"))
@@ -62,7 +64,7 @@ class SelectorSpec extends Specification {
 
   private def top() = {
     val t = Topology(
-      Mappers.map(new AtomicReference(ReplicaSet[Int](
+      Mappers.map(new AtomicReference(ReplicaSets[Int](
         Map(0 -> endpoint0.id, 1 -> endpoint1.id)))),
       LoadBalancer.random,
       Marshaller.read,

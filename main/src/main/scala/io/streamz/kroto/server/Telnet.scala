@@ -29,7 +29,7 @@ import scala.collection.mutable
 object Telnet {
   def apply(args: Array[String]): Option[AutoCloseable] =
     CmdLineParser.parse(args).fold(Option.empty[AutoCloseable]) { c =>
-      val mapRef = new AtomicReference[ReplicaSet[String]]
+      val mapRef = new AtomicReference[ReplicaSets[String]]
 
       def newSelector: Option[Selector[String]] = {
         val replicas: Map[Int, ReplicaSetId] =
@@ -63,11 +63,15 @@ object Telnet {
                 case TopologyCommand =>
                   s.println("topology:")
                   s.println(selector.toString)
+                case LeaderCommand =>
+                  s.println(
+                    s"cluster leader: ${selector
+                      .getLeader.fold("Unknown")(_.toString)}")
                 case MapCommand =>
                   val m = Command.parseMap(cmd.args)
                   s.println("new mapping:")
                   s.println(m.mkString("\n"))
-                  mapRef.set(ReplicaSet(m))
+                  mapRef.set(ReplicaSets(m))
                 case _ =>
               }
             }))

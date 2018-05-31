@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference
 import org.specs2.mutable.Specification
 
 class MapperSpec extends Specification {
-  val rset = ReplicaSet(Map[Int, ReplicaSetId](
+  val rset = ReplicaSets(Map[Int, ReplicaSetId](
     0 -> ReplicaSetId("r0"),
     1 -> ReplicaSetId("r1"),
     2 -> ReplicaSetId("r2"),
@@ -37,7 +37,7 @@ class MapperSpec extends Specification {
 
   "A mapper maps using a map" ! {
     Mappers.map(
-      new AtomicReference[ReplicaSet[Int]](rset))(5)
+      new AtomicReference[ReplicaSets[Int]](rset))(5)
         .fold(ReplicaSetId("r0"))(identity) ==== ReplicaSetId("r5")
   }
 

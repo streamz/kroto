@@ -24,7 +24,7 @@ import io.streamz.kroto.internal.HashRing
 
 object Mappers {
   def mod[A](
-    r: ReplicaSet[Int],
+    r: ReplicaSets[Int],
     f: A => Int): A => Option[ReplicaSetId] =
     (a: A) => {
       if (r.value.isEmpty) None
@@ -32,13 +32,13 @@ object Mappers {
     }
 
   def ring[A](
-    r: ReplicaSet[Int],
+    r: ReplicaSets[Int],
     f: A => String): A => Option[ReplicaSetId] = {
     val ring = new HashRing[ReplicaSetId](r.value.values.toList, 197)
     a: A => ring(f(a))
   }
 
   def map[A](
-    m: AtomicReference[ReplicaSet[A]]): A => Option[ReplicaSetId] =
+    m: AtomicReference[ReplicaSets[A]]): A => Option[ReplicaSetId] =
     (a: A) => m.get.value.get(a)
 }

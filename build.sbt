@@ -5,7 +5,7 @@ import Settings._
 
 // TODO: CLEANUP
 
-val kroto = global(project in file("kroto"), "core")
+val kroto = global(project in file("kroto"), "kroto")
   .settings(libraryDependencies ++= Dependencies.kroto.deps)
   .disablePlugins(sbtassembly.AssemblyPlugin)
 
@@ -31,7 +31,7 @@ val main = global(project in file("main"), "main")
     })
   .dependsOn(kroto)
 
-val root = global(project in file("."), "kroto")
+val root = global(project in file("."), "root")
   .settings(publishArtifact := false)
   .aggregate(kroto, main)
   .disablePlugins(sbtassembly.AssemblyPlugin)

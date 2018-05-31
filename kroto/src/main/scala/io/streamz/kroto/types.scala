@@ -48,7 +48,7 @@ case class GroupId(value: String) extends AnyVal
   * A mapping of ReplicaSetId(s)
   * @param value map
   */
-case class ReplicaSet[A](value: Map[A, ReplicaSetId]) extends AnyVal
+case class ReplicaSets[A](value: Map[A, ReplicaSetId]) extends AnyVal
 
 /**
   * The Id of the replica set

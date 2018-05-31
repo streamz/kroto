@@ -30,7 +30,7 @@ class GroupSpec extends Specification {
 
   def top() = {
     val t = Topology(
-      Mappers.map(new AtomicReference(ReplicaSet[Int](Map(
+      Mappers.map(new AtomicReference(ReplicaSets[Int](Map(
         0 -> endpoint0.id,
         1 -> endpoint1.id
       )))),

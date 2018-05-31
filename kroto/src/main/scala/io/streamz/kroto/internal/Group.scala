@@ -28,6 +28,7 @@ import org.jgroups._
 
 trait Group[A] {
   def isLeader: Boolean
+  def getLeader: Option[LogicalAddress]
   def join(ep: Endpoint): Unit
   def leave(): Unit
   def topology(): Topology[A]
@@ -48,11 +49,14 @@ object Group {
     Some {
       new Group[A] with Receiver with StrictLogging {
         private val jc = new JChannel(p.get: _*)
-        private val leader = new AtomicBoolean(false)
+        private val clusterLeader = new AtomicBoolean(false)
+        private val leader = new AtomicReference[Option[LogicalAddress]](None)
         private val worker = new SPSCQueue[View](update, 10)
         private val members = new AtomicReference[Set[Address]](Set())
 
-        def isLeader = leader.get()
+        def isLeader = clusterLeader.get()
+
+        def getLeader: Option[LogicalAddress] = leader.get()
 
         def topology() = top
 
@@ -92,12 +96,17 @@ object Group {
         def viewAccepted(view: View) = {
           val address = jc.address()
           import scala.collection.JavaConversions._
-          leader.set(view.getMembers.headOption.fold(false) { a =>
+          clusterLeader.set(view.getMembers.headOption.fold {
+            leader.set(None)
+            false
+          } { a =>
+            leader.set(Some(LogicalAddress(a.toString)))
             a.equals(address)
           })
           worker.push(view)
         }
 
+        // TODO: mark node down
         def suspect(suspect: Address) =
           logger.error(s"... $suspect is suspect")
 

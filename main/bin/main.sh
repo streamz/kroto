@@ -12,7 +12,6 @@ EXT=
 PID=
 URI=
 ENDPOINT=
-QUERY_STRING=
 T_PORT=
 LOG_LEVEL="info"
 JAVA_HOME=
@@ -28,7 +27,7 @@ while [ "$1" != "" ]; do
         -jmx)
             JMX="-Dcom.sun.management.jmxremote.port=${VALUE} -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"
             ;;
-        -tport)
+        -telnetPort)
             T_PORT="${VALUE}"
             ;;
         -uri)
@@ -37,13 +36,10 @@ while [ "$1" != "" ]; do
         -group)
             GROUP="${VALUE}"
             ;;
-        -query)
-            QUERY_STRING="${VALUE}"
-            ;;
-         -replicas)
+         -replicaSets)
             REPS="${VALUE}"
             ;;
-        -endpoint)
+        -service)
             ENDPOINT="${VALUE}"
             ;;
         -loglevel)
