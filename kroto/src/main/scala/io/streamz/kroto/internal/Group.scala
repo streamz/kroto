@@ -31,7 +31,8 @@ trait Group[A] {
   def getLeader: Option[LogicalAddress]
   def join(ep: Endpoint): Unit
   def leave(): Unit
-  def topology(): Topology[A]
+  def sync(): Unit
+  def getTopology: Topology[A]
 }
 
 object Group {
@@ -58,7 +59,7 @@ object Group {
 
         def getLeader: Option[LogicalAddress] = leader.get()
 
-        def topology() = top
+        def getTopology = top
 
         def join(ep: Endpoint): Unit = {
           jc.setReceiver(this)
@@ -66,7 +67,7 @@ object Group {
           jc.connect(id.value)
 
           val sep = ep.copy(la = Some(LogicalAddress(jc.getAddressAsString)))
-          topology().add(sep)
+          getTopology.add(sep)
 
           if (!isLeader) sendHelloMsg(sep)
         }
@@ -91,6 +92,11 @@ object Group {
               case _ =>
             }
           case _ => logger.debug(s"discarding message:\n$msg")
+        }
+
+        def sync() = {
+        //  if (isLeader) sendSyncMsg()
+        //  else
         }
 
         def viewAccepted(view: View) = {
@@ -160,6 +166,18 @@ object Group {
           logger.debug(s"sending sync message: $msg")
           jc.send(msg)
         }
+
+        /*
+        private def sendMergeMapMsg() = {
+          val msg = new Message(true)
+          val hdr = new MessageHeader(MergeMap)
+          msg.putHeader(hdr.getMagicId, hdr)
+          // send back to the coordinator
+          msg.setDest(jc.getView.getMembers.get(0))
+          msg.setBuffer(Endpoint.toBuffer(dest))
+          jc.send(msg)
+        }*/
+
       }
     }
   }

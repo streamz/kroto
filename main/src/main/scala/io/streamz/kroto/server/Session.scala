@@ -41,6 +41,7 @@ object Session {
     "Usage: kroto> [help] [leader] [top] [map <k=v>] [select <key>]\n" +
     "  select <key>  show the selected endpoint for key",
     "  map <k=v k=v> sets the key mapping for the the topology",
+    "  smap          show the topology mapper",
     "  top           show the kroto routing topology",
     "  leader        show the cluster leader",
     "  help          show help").mkString("\n")
@@ -70,6 +71,7 @@ class Session private [server] (
           case "select" =>
             if (len == 2) Some(ShellCommand(SelectorCommand, cmd.tail.toList))
             else Option.empty[ShellCommand]
+          case "smap" => Some(ShellCommand(ShowMapCommand, List.empty))
           case "map" =>
             if (len > 1) Some(ShellCommand(MapCommand, cmd.tail.toList))
             else Option.empty[ShellCommand]

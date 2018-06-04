@@ -19,8 +19,6 @@
 package io.streamz.kroto
 
 import java.net.URI
-import java.util.concurrent.atomic.AtomicReference
-
 import io.streamz.kroto.internal.Marshaller
 import org.specs2.mutable.Specification
 
@@ -44,13 +42,13 @@ class TopologySpec extends Specification {
 
   def top() = {
     val t = Topology(
-      Mappers.map(
-        new AtomicReference(ReplicaSets[Int](
+      Mapper.map(
+        ReplicaSets(
           Map(
-            0 -> ReplicaSetId("r0"),
-            1 -> ReplicaSetId("r1"),
-            2 -> ReplicaSetId("r2"),
-            3 -> ReplicaSetId("r3"))))),
+            0L -> ReplicaSetId("r0"),
+            1L -> ReplicaSetId("r1"),
+            2L -> ReplicaSetId("r2"),
+            3L -> ReplicaSetId("r3"))), identity[Long]),
       LoadBalancer.random,
       Marshaller.read,
       Marshaller.write

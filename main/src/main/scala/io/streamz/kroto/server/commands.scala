@@ -23,6 +23,7 @@ import io.streamz.kroto.ReplicaSetId
 sealed trait Command
 case object TopologyCommand extends Command
 case object SelectorCommand extends Command
+case object ShowMapCommand extends Command
 case object MapCommand extends Command
 case object LeaderCommand extends Command
 case class ShellCommand(cmd: Command, args: List[String])

@@ -18,29 +18,30 @@
 */
 package io.streamz.kroto.server
 
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
+import java.util.concurrent.atomic.AtomicBoolean
 
 import io.streamz.kroto._
 import io.streamz.kroto.internal.Group
 import org.jline.builtins.telnet._
 
 import scala.collection.mutable
+import scala.util.hashing.MurmurHash3
 
 object Telnet {
   def apply(args: Array[String]): Option[AutoCloseable] =
     CmdLineParser.parse(args).fold(Option.empty[AutoCloseable]) { c =>
-      val mapRef = new AtomicReference[ReplicaSets[String]]
+      val group = Group(
+        c.uri,
+        c.gid,
+        Topology(
+          Mapper.map(ReplicaSets(Map.empty),
+            (s: String) => MurmurHash3.stringHash(s)),
+          LoadBalancer.random))
 
       def newSelector: Option[Selector[String]] = {
         val replicas: Map[Int, ReplicaSetId] =
           c.rids.zipWithIndex.map(_.swap).toMap
-        val g = Group(
-          c.uri,
-          c.gid,
-          Topology(
-            Mappers.map(mapRef),
-            LoadBalancer.random))
-        g.fold(Option.empty[Selector[String]]) { f =>
+        group.fold(Option.empty[Selector[String]]) { f =>
           Some(Selector(Endpoint(c.ep, replicas(0)), f))
         }
       }
@@ -62,16 +63,25 @@ object Telnet {
                   }
                 case TopologyCommand =>
                   s.println("topology:")
-                  s.println(selector.toString)
+                  s.println(group.get.getTopology.toString)
                 case LeaderCommand =>
                   s.println(
-                    s"cluster leader: ${selector
-                      .getLeader.fold("Unknown")(_.toString)}")
+                    s"cluster leader: ${
+                      group.get.getLeader.fold("Unknown")(_.toString)}")
+                case ShowMapCommand =>
+                  s.println("map:")
+                  s.println(
+                    group.get.getTopology.mapperToString)
                 case MapCommand =>
                   val m = Command.parseMap(cmd.args)
                   s.println("new mapping:")
                   s.println(m.mkString("\n"))
-                  mapRef.set(ReplicaSets(m))
+                  group.get
+                    .getTopology
+                    .merge(
+                      ReplicaSets(
+                        m.map(
+                          kv => (MurmurHash3.stringHash(kv._1).toLong, kv._2))))
                 case _ =>
               }
             }))

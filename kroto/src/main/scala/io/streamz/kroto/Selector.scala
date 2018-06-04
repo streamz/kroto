@@ -23,7 +23,6 @@ import io.streamz.kroto.internal.Group
 trait Selector[A] extends AutoCloseable {
   def start(): Unit
   def select(key: A): Option[Endpoint]
-  def getLeader: Option[LogicalAddress]
 }
 
 object Selector {
@@ -31,9 +30,8 @@ object Selector {
     serviceEndpoint: Endpoint,
     group: Group[A]): Selector[A] = new Selector[A] {
     def start(): Unit = group.join(serviceEndpoint)
-    def select(key: A): Option[Endpoint] = group.topology().select(key)
+    def select(key: A): Option[Endpoint] = group.getTopology.select(key)
     def close(): Unit = group.leave()
-    def getLeader: Option[LogicalAddress] = group.getLeader
-    override def toString = group.topology().toString
+    override def toString = group.getTopology.toString
   }
 }

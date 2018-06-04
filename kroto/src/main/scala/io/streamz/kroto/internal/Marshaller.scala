@@ -21,7 +21,7 @@ package io.streamz.kroto.internal
 import java.io.{DataInputStream, DataOutputStream, InputStream, OutputStream}
 import java.net.URI
 
-import io.streamz.kroto.{Endpoint, LogicalAddress, ReplicaSetId}
+import io.streamz.kroto.{Endpoint, LogicalAddress, ReplicaSetId, TopologyState}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -41,6 +41,25 @@ object Marshaller {
     os.flush()
   }
 
+  /*
+  def write[A](state: TopologyState[A], out: OutputStream) = {
+    val os = new DataOutputStream(out)
+
+    state.replicas.value
+
+    val epl = state.eps
+    os.writeInt(epl.length)
+    epl.foreach { set =>
+      os.writeInt(set.size)
+      set.foreach { ep =>
+        os.writeUTF(ep.ep.toString)
+        os.writeUTF(ep.id.value)
+        os.writeUTF(ep.la.fold("")(_.value))
+      }
+    }
+    os.flush()
+  }
+*/
   def read(in: InputStream): List[Set[Endpoint]] = {
     val is = new DataInputStream(in)
     val listLen = is.readInt()

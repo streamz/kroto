@@ -37,6 +37,10 @@ case object Hello extends Msg {
   val id = 2
   val toOption = Some(Hello)
 }
+case object MergeMap extends Msg {
+  val id = 3
+  val toOption = Some(MergeMap)
+}
 
 /**
   * The Id of the group
@@ -48,7 +52,7 @@ case class GroupId(value: String) extends AnyVal
   * A mapping of ReplicaSetId(s)
   * @param value map
   */
-case class ReplicaSets[A](value: Map[A, ReplicaSetId]) extends AnyVal
+case class ReplicaSets(value: Map[Long, ReplicaSetId]) extends AnyVal
 
 /**
   * The Id of the replica set
@@ -61,6 +65,13 @@ case class ReplicaSetId(value: String) extends AnyVal
   * @param value string
   */
 case class LogicalAddress(value: String) extends AnyVal
+
+/**
+  * Represents the state of a topology
+  * @param eps endpoints
+  * @param replicas replica set mappers
+  */
+case class TopologyState(eps: List[Set[Endpoint]], replicas: ReplicaSets)
 
 /**
   * An endpoint URI

@@ -19,8 +19,6 @@
 package io.streamz.kroto.internal
 
 import java.net.URI
-import java.util.concurrent.atomic.AtomicReference
-
 import io.streamz.kroto._
 import org.specs2.mutable.Specification
 
@@ -30,10 +28,10 @@ class GroupSpec extends Specification {
 
   def top() = {
     val t = Topology(
-      Mappers.map(new AtomicReference(ReplicaSets[Int](Map(
-        0 -> endpoint0.id,
-        1 -> endpoint1.id
-      )))),
+      Mapper.map(ReplicaSets(Map(
+        0L -> endpoint0.id,
+        1L -> endpoint1.id
+      )), identity[Long]),
       LoadBalancer.random,
       Marshaller.read,
       Marshaller.write

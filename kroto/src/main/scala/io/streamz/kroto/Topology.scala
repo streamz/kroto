@@ -53,8 +53,21 @@ trait Topology[A] {
     */
   def find(la: LogicalAddress): Option[Endpoint]
 
-  private [kroto] def add(ep: Endpoint)
-  private [kroto] def remove(la: LogicalAddress)
+  /**
+    * Merge a new ReplicaSets
+    * @param rs ReplicaSets
+    */
+  def merge(rs: ReplicaSets): Unit
+
+  /**
+    * Get ReplicaSets
+    * @return Option[ReplicaSets]
+    */
+  def getReplicas: Option[ReplicaSets]
+
+  private [kroto] def mapperToString: String
+  private [kroto] def add(ep: Endpoint): Unit
+  private [kroto] def remove(la: LogicalAddress): Unit
 }
 
 /**
@@ -64,72 +77,79 @@ trait Topology[A] {
   */
 object Topology {
   def apply[A](
-    mapper: A => Option[ReplicaSetId],
+    mapper: Mapper[A],
     balance: List[Endpoint] => Option[Endpoint],
     reader: InputStream => List[Set[Endpoint]] = mm.read,
     writer: (List[Set[Endpoint]], OutputStream) => Unit = mm.write) =
     new Topology[A] with StrictLogging {
-    private val index =
-      new AtomicReference[m.HashMap[ReplicaSetId, List[Endpoint]]](
-        new m.HashMap[ReplicaSetId, List[Endpoint]])
+      private val index =
+        new AtomicReference[m.HashMap[ReplicaSetId, List[Endpoint]]](
+          new m.HashMap[ReplicaSetId, List[Endpoint]])
 
-    def select(key: A) =
-      mapper(key)
-        .fold(Option.empty[Endpoint])(
-          index.get.get(_).fold(Option.empty[Endpoint])(balance(_)))
+      def select(key: A) =
+        mapper(key)
+          .fold(Option.empty[Endpoint])(
+            index.get.get(_).fold(Option.empty[Endpoint])(balance(_)))
 
-    def read(in: InputStream) = update(reader(in))
+      def read(in: InputStream) = update(reader(in))
 
-    def write(out: OutputStream) =
-      writer(index.get.map(_._2.toSet).toList, out)
+      def write(out: OutputStream) =
+        writer(index.get.map(_._2.toSet).toList, out)
 
-    def find(la: LogicalAddress) = {
-      val i = index.get()
-      i.values.flatten
-        .find(ep => ep.la.fold(false)(a => a.value.equals(la.value)))
-    }
+      def find(la: LogicalAddress) = {
+        val i = index.get()
+        i.values.flatten
+          .find(ep => ep.la.fold(false)(a => a.value.equals(la.value)))
+      }
 
-    override def toString = {
-      val sb = new StringBuilder
-      index.get().foreach { set =>
-        sb.append("replicaSetId: ")
-          .append(set._1.value)
-        set._2.foreach { ep =>
-          sb.append("\n\t")
-            .append(s"address: ${ep.la.fold("NA")(_.value)}")
-            .append("\n\t")
-            .append(s"endpoint: ${ep.ep}")
+      def merge(rs: ReplicaSets) = mapper.merge(rs)
+      def getReplicas = mapper.getReplicas
+
+      override def toString = {
+        val sb = new StringBuilder
+        index.get().foreach { set =>
+          sb.append("replicaSetId: ")
+            .append(set._1.value)
+          set._2.foreach { ep =>
+            sb.append("\n\t")
+              .append(s"address: ${ep.la.fold("NA")(_.value)}")
+              .append("\n\t")
+              .append(s"endpoint: ${ep.ep}")
+          }
+          sb.append("\n")
         }
-        sb.append("\n")
+        sb.toString()
       }
-      sb.toString()
-    }
 
-    private [kroto] def add(ep: Endpoint) = synchronized {
-      logger.debug(s"adding: ${ep.la.fold("")(_.value)} endpoint: ${ep.ep}")
-      val i = index.get()
-      i.get(ep.id).fold(i.put(ep.id, List(ep)))(l => i.put(ep.id, l :+ ep))
-    }
-
-    private [kroto] def remove(la: LogicalAddress) = synchronized {
-      logger.debug(s"removing: ${la.value}")
-      val i = index.get()
-      i.foreach { kv =>
-        i.put(
-          kv._1,
-          kv._2.filterNot(_.la.fold(false)(a => a.value.equals(la.value))))
+      private [kroto] def add(ep: Endpoint) = synchronized {
+        logger.debug(s"adding: ${ep.la.fold("")(_.value)} endpoint: ${ep.ep}")
+        val i = index.get()
+        i.get(ep.id).fold(i.put(ep.id, List(ep)))(l => i.put(ep.id, l :+ ep))
       }
-    }
 
-    private [kroto] def update(epl: List[Set[Endpoint]]) = synchronized {
-      val i = new m.HashMap[ReplicaSetId, List[Endpoint]]
-      epl.foreach { set =>
-        set.foreach { ep =>
-          i.get(ep.id).fold(i.put(ep.id, List(ep)))(l => i.put(ep.id, l :+ ep))
+      private [kroto] def remove(la: LogicalAddress) = synchronized {
+        logger.debug(s"removing: ${la.value}")
+        val i = index.get()
+        i.foreach { kv =>
+          i.put(
+            kv._1,
+            kv._2.filterNot(_.la.fold(false)(a => a.value.equals(la.value))))
         }
       }
-      index.set(i)
-      logger.debug(s"topology update: \n$toString")
+
+      private [kroto] def update(epl: List[Set[Endpoint]]) = synchronized {
+        val i = new m.HashMap[ReplicaSetId, List[Endpoint]]
+        epl.foreach { set =>
+          set.foreach { ep =>
+            i.get(ep.id)
+              .fold(i.put(ep.id, List(ep)))(l => i.put(ep.id, l :+ ep))
+          }
+        }
+        index.set(i)
+        logger.debug(s"topology update: \n$toString")
+      }
+
+      private[kroto] def mapperToString =
+        mapper.getReplicas.fold("Empty map")(_.value.toString)
     }
-  }
 }
