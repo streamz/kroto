@@ -100,7 +100,6 @@ kroto shell
 Usage: kroto> [help] [leader] [top] [map <k=v>] [select <key>]
   select <key>  show the selected endpoint for key
   map <k=v k=v> sets the key mapping for the the topology
-  smap          show the topology mapper
   top           show the kroto routing topology
   leader        show the cluster leader (denoted by *)
   help          show help
@@ -127,7 +126,6 @@ kroto shell
 Usage: kroto> [help] [leader] [top] [map <k=v>] [select <key>]
   select <key>  show the selected endpoint for key
   map <k=v k=v> sets the key mapping for the the topology
-  smap          show the topology mapper
   top           show the kroto routing topology
   leader        show the cluster leader (denoted by *)
   help          show help
