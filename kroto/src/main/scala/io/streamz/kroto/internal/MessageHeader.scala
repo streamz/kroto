@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
     Copyright 2018 streamz.io
-    KROTO: Klustering ROuter TOpology
+    KROTO: Klustered R0uting T0pology
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -56,8 +56,9 @@ class MessageHeader extends Header with Streamable {
 
   def toMsg: Option[Msg] = id match {
     case Sync.id => Sync.toOption
-    case Status.id => Status.toOption
+    case State.id => State.toOption
     case Hello.id => Hello.toOption
+    case Merge.id => Merge.toOption
     case _ => None
   }
 }

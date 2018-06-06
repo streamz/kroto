@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
     Copyright 2018 streamz.io
-    KROTO: Klustering ROuter TOpology
+    KROTO: Klustered R0uting T0pology
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -21,16 +21,17 @@ package io.streamz.kroto.internal
 import java.io.{DataInputStream, DataOutputStream, InputStream, OutputStream}
 import java.net.URI
 
-import io.streamz.kroto.{Endpoint, LogicalAddress, ReplicaSetId, TopologyState}
+import io.streamz.kroto._
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 object Marshaller {
-  def write(epl: List[Set[Endpoint]], out: OutputStream) = {
+  def write(state: TopologyState, out: OutputStream) = {
+    writeReplicas(state.replicas, out)
     val os = new DataOutputStream(out)
-    os.writeInt(epl.length)
-    epl.foreach { set =>
+    os.writeInt(state.eps.length)
+    state.eps.foreach { set =>
       os.writeInt(set.size)
       set.foreach { ep =>
         os.writeUTF(ep.ep.toString)
@@ -41,26 +42,8 @@ object Marshaller {
     os.flush()
   }
 
-  /*
-  def write[A](state: TopologyState[A], out: OutputStream) = {
-    val os = new DataOutputStream(out)
-
-    state.replicas.value
-
-    val epl = state.eps
-    os.writeInt(epl.length)
-    epl.foreach { set =>
-      os.writeInt(set.size)
-      set.foreach { ep =>
-        os.writeUTF(ep.ep.toString)
-        os.writeUTF(ep.id.value)
-        os.writeUTF(ep.la.fold("")(_.value))
-      }
-    }
-    os.flush()
-  }
-*/
-  def read(in: InputStream): List[Set[Endpoint]] = {
+  def read(in: InputStream): TopologyState = {
+    val replicas = readReplicas(in)
     val is = new DataInputStream(in)
     val listLen = is.readInt()
     val listBuffer = new ListBuffer[Set[Endpoint]]
@@ -75,6 +58,23 @@ object Marshaller {
       }
       listBuffer += s.toSet
     }
-    listBuffer.toList
+    TopologyState(listBuffer.toList, replicas)
+  }
+
+  def writeReplicas(state: ReplicaSets, out: OutputStream): Unit = {
+    val os = new DataOutputStream(out)
+    os.writeInt(state.value.size)
+    state.value.foreach { t =>
+      os.writeLong(t._1)
+      os.writeUTF(t._2.value)
+    }
+  }
+
+  def readReplicas(in: InputStream): ReplicaSets = {
+    val is = new DataInputStream(in)
+    val mapLen = is.readInt()
+    ReplicaSets((0 until mapLen map { _ =>
+      (is.readLong(), ReplicaSetId(is.readUTF()))
+    }).toMap)
   }
 }

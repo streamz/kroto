@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
     Copyright 2018 streamz.io
-    Cluster Hash Ring Router based on JGroups
+    KROTO: Klustered R0uting T0pology
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ package io.streamz.kroto.internal
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.net.URI
 
-import io.streamz.kroto.{Endpoint, LogicalAddress, ReplicaSetId}
+import io.streamz.kroto._
 import org.specs2.mutable.Specification
 
 class MarshallerSpec extends Specification {
@@ -34,14 +34,27 @@ class MarshallerSpec extends Specification {
     ReplicaSetId("r1"),
     Some(LogicalAddress("5678")))
 
-  "A marshaller can marshall a list of sets" ! {
+  val replicaSets = ReplicaSets(
+    Map(
+      0L -> ReplicaSetId("r0"),
+      1L -> ReplicaSetId("r1")))
+
+  "A marshaller can marshall a TopologyState" ! {
     val os = new ByteArrayOutputStream()
-    Marshaller.write(List(Set(endpoint0, endpoint1)), os)
+    Marshaller.write(
+      TopologyState(List(Set(endpoint0, endpoint1)), replicaSets), os)
     val is = new ByteArrayInputStream(os.toByteArray)
-    val res = Marshaller.read(is).flatMap(_.map(identity))
+    val state = Marshaller.read(is)
     os.close()
     is.close()
+
+    val res = state.eps.flatMap(_.map(identity))
     res.contains(endpoint0) ==== true
     res.contains(endpoint1) ==== true
+
+    state.replicas.value.foreach { kv =>
+      replicaSets.value(kv._1) ==== kv._2
+    }
+    true ==== true
   }
 }

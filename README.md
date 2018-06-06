@@ -1,5 +1,5 @@
 # kroto
-Klustering R0uter T0pology
+Klustered R0uting T0pology
 
 Harry Kroto, was an English chemist. 
 He discovered and named the buckminsterfullerene, which looks a bit like a network topology!
@@ -40,38 +40,73 @@ cd main/bin
 
 Start the 1st telnet server:
 
+```bash
 ./main.sh \
 -group=test \
 -uri="tcp://localhost:8000?node=localhost:8000&node=localhost:8001&node=localhost:9000&node=localhost:9001" \
--service=tcp://localhost:8800 \
+-service=http://localhost:8081 \
 -telnetPort=8800 \
 -replicaSets=r8000,r9000  
-
+```
 Start the 2nd telnet server
 
+```bash
 ./main.sh \
 -group=test \
 -uri="tcp://localhost:8000?node=localhost:8000&node=localhost:8001&node=localhost:9000&node=localhost:9001" \
--service=tcp://localhost:8800 \
+-service=http://localhost:8082 \
 -telnetPort=8801 \
 -replicaSets=r8000,r9000  
+```
 
 Start the 3rd telnet server
 
+```bash
 ./main.sh \
 -group=test \
 -uri="tcp://localhost:9000?node=localhost:8000&node=localhost:8001&node=localhost:9000&node=localhost:9001" \
--service=tcp://localhost:9800 \
+-service=http://localhost:9081 \
 -telnetPort=9800 \
 -replicaSets=r9000,r8000 
+```
 
 Start the 4th telnet server
 
+```bash
 ./main.sh \
 -group=test \
 -uri="tcp://localhost:9001?node=localhost:8000&node=localhost:8001&node=localhost:9000&node=localhost:9001" \
--service=tcp://localhost:9801 \
+-service=http://localhost:9082 \
 -telnetPort=9801 \
 -replicaSets=r9000,r8000 
+```
+
+Open up a shell and type:
+```bash
+$telnet 0 8800
+
+Trying 0.0.0.0...
+Connected to 0.
+Escape character is '^]'.
+    _...._
+  .'   \ _'.
+ /##\__/##\_\      __             __     
+|\##/  \##/  |    / /__ _______  / /____ 
+|/  \__/  \ _|   /  '_// __/ _ \/ __/ _ \
+ \ _/##\__/#/   /_/\_\/_/  \___/\__/\___/
+  '.\##/__.'          selector topology test app
+    `""""`
+kroto shell
+Usage: kroto> [help] [leader] [top] [map <k=v>] [select <key>]
+  select <key>  show the selected endpoint for key
+  map <k=v k=v> sets the key mapping for the the topology
+  smap          show the topology mapper
+  top           show the kroto routing topology
+  leader        show the cluster leader (denoted by *)
+  help          show help
+kroto>
+
+```
+
 
 

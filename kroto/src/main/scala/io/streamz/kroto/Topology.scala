@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
     Copyright 2018 streamz.io
-    KROTO: Klustering ROuter TOpology
+    KROTO: Klustered R0uting T0pology
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -79,8 +79,8 @@ object Topology {
   def apply[A](
     mapper: Mapper[A],
     balance: List[Endpoint] => Option[Endpoint],
-    reader: InputStream => List[Set[Endpoint]] = mm.read,
-    writer: (List[Set[Endpoint]], OutputStream) => Unit = mm.write) =
+    reader: InputStream => TopologyState = mm.read,
+    writer: (TopologyState, OutputStream) => Unit = mm.write) =
     new Topology[A] with StrictLogging {
       private val index =
         new AtomicReference[m.HashMap[ReplicaSetId, List[Endpoint]]](
@@ -94,7 +94,10 @@ object Topology {
       def read(in: InputStream) = update(reader(in))
 
       def write(out: OutputStream) =
-        writer(index.get.map(_._2.toSet).toList, out)
+        writer(
+          TopologyState(
+            index.get.map(_._2.toSet).toList,
+            mapper.getReplicas.getOrElse(ReplicaSets(Map.empty))), out)
 
       def find(la: LogicalAddress) = {
         val i = index.get()
@@ -118,7 +121,9 @@ object Topology {
           }
           sb.append("\n")
         }
-        sb.toString()
+        sb.append("replicas: \n\t")
+          .append(mapper.getReplicas.fold("Empty")(_.value.mkString("\n\t")))
+          .toString()
       }
 
       private [kroto] def add(ep: Endpoint) = synchronized {
@@ -137,15 +142,16 @@ object Topology {
         }
       }
 
-      private [kroto] def update(epl: List[Set[Endpoint]]) = synchronized {
+      private [kroto] def update(state: TopologyState) = synchronized {
         val i = new m.HashMap[ReplicaSetId, List[Endpoint]]
-        epl.foreach { set =>
+        state.eps.foreach { set =>
           set.foreach { ep =>
             i.get(ep.id)
               .fold(i.put(ep.id, List(ep)))(l => i.put(ep.id, l :+ ep))
           }
         }
         index.set(i)
+        merge(state.replicas)
         logger.debug(s"topology update: \n$toString")
       }
 

@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
     Copyright 2018 streamz.io
-    Cluster Hash Ring Router based on JGroups
+    KROTO: Klustered R0uting T0pology
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -65,9 +65,11 @@ object Telnet {
                   s.println("topology:")
                   s.println(group.get.getTopology.toString)
                 case LeaderCommand =>
+                  val g = group.get
                   s.println(
                     s"cluster leader: ${
-                      group.get.getLeader.fold("Unknown")(_.toString)}")
+                      g.getLeader.fold("Unknown")(f =>
+                        s"${f.toString}${if(g.isLeader) "*" else ""}")}")
                 case ShowMapCommand =>
                   s.println("map:")
                   s.println(
@@ -82,6 +84,7 @@ object Telnet {
                       ReplicaSets(
                         m.map(
                           kv => (MurmurHash3.stringHash(kv._1).toLong, kv._2))))
+                  group.get.merge()
                 case _ =>
               }
             }))

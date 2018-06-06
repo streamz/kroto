@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
     Copyright 2018 streamz.io
-    Cluster Hash Ring Router based on JGroups
+    KROTO: Klustered R0uting T0pology
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ object Session {
     "  map <k=v k=v> sets the key mapping for the the topology",
     "  smap          show the topology mapper",
     "  top           show the kroto routing topology",
-    "  leader        show the cluster leader",
+    "  leader        show the cluster leader (denoted by *)",
     "  help          show help").mkString("\n")
 }
 //noinspection ConvertExpressionToSAM

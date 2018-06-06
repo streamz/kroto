@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
     Copyright 2018 streamz.io
-    KROTO: Klustering ROuter TOpology
+    KROTO: Klustered R0uting T0pology
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -29,17 +29,17 @@ case object Sync extends Msg {
   val id = 0
   val toOption = Some(Sync)
 }
-case object Status extends Msg {
+case object State extends Msg {
   val id = 1
-  val toOption = Some(Status)
+  val toOption = Some(State)
 }
 case object Hello extends Msg {
   val id = 2
   val toOption = Some(Hello)
 }
-case object MergeMap extends Msg {
+case object Merge extends Msg {
   val id = 3
-  val toOption = Some(MergeMap)
+  val toOption = Some(Merge)
 }
 
 /**

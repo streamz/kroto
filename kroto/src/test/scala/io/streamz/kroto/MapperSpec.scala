@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
     Copyright 2018 streamz.io
-    Cluster Hash Ring Router based on JGroups
+    KROTO: Klustered R0uting T0pology
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -36,8 +36,16 @@ class MapperSpec extends Specification {
   "A mapper merges ReplicaSets" ! {
     val m = Mapper.map(rset, identity[Long])
     m.merge(ReplicaSets(Map(9L->ReplicaSetId("r10"), 11L->ReplicaSetId("r11"))))
-    m(11L).fold(ReplicaSetId("r0"))(identity) ==== ReplicaSetId("r11")
+    m(1L).fold(ReplicaSetId("r0"))(identity) ==== ReplicaSetId("r1")
+    m(2L).fold(ReplicaSetId("r0"))(identity) ==== ReplicaSetId("r2")
+    m(3L).fold(ReplicaSetId("r0"))(identity) ==== ReplicaSetId("r3")
+    m(4L).fold(ReplicaSetId("r0"))(identity) ==== ReplicaSetId("r4")
+    m(5L).fold(ReplicaSetId("r0"))(identity) ==== ReplicaSetId("r5")
+    m(6L).fold(ReplicaSetId("r0"))(identity) ==== ReplicaSetId("r6")
+    m(7L).fold(ReplicaSetId("r0"))(identity) ==== ReplicaSetId("r7")
+    m(8L).fold(ReplicaSetId("r0"))(identity) ==== ReplicaSetId("r8")
     m(9L).fold(ReplicaSetId("r0"))(identity) ==== ReplicaSetId("r10")
+    m(11L).fold(ReplicaSetId("r0"))(identity) ==== ReplicaSetId("r11")
   }
 
   "A mapper maps using a map" ! {

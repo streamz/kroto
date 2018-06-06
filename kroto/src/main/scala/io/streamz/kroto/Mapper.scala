@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
     Copyright 2018 streamz.io
-    KROTO: Klustering ROuter TOpology
+    KROTO: Klustered R0uting T0pology
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -26,8 +26,12 @@ trait Mapper[A] {
   def apply(a: A): Option[ReplicaSetId]
   def replicas: AtomicReference[ReplicaSets]
   def getReplicas: Option[ReplicaSets]
-  def merge(rs: ReplicaSets) =
-    replicas.set(ReplicaSets(replicas.get().value ++ rs.value))
+  def merge(rs: ReplicaSets) = {
+    val reps = replicas.get().value
+    val keys = rs.value.keySet ++ reps.keySet
+    val map = keys.map(k => (k, rs.value.getOrElse(k, reps(k)))).toMap
+    replicas.set(ReplicaSets(map))
+  }
 }
 
 object Mapper {

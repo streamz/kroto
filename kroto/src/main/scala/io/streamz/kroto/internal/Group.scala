@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
     Copyright 2018 streamz.io
-    KROTO: Klustering ROuter TOpology
+    KROTO: Klustered R0uting T0pology
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ trait Group[A] {
   def getLeader: Option[LogicalAddress]
   def join(ep: Endpoint): Unit
   def leave(): Unit
-  def sync(): Unit
+  def merge(): Unit
   def getTopology: Topology[A]
 }
 
@@ -65,10 +65,8 @@ object Group {
           jc.setReceiver(this)
           jc.setDiscardOwnMessages(true)
           jc.connect(id.value)
-
           val sep = ep.copy(la = Some(LogicalAddress(jc.getAddressAsString)))
           getTopology.add(sep)
-
           if (!isLeader) sendHelloMsg(sep)
         }
 
@@ -83,20 +81,28 @@ object Group {
           case m: MessageHeader =>
             m.toMsg.foreach {
               case Sync =>
-                logger.debug("topology has changed, getting state")
-                jc.getState(null, 5000)
+                logger.debug(s"• `Sync` received topology has changed")
+                assert(!isLeader)
+                if (!isLeader) jc.getState(null, 5000)
               case Hello =>
-                logger.debug(s"`Hello` received: $msg")
+                logger.debug(s"• `Hello` received: $msg")
                 top.add(Endpoint.fromBuffer(msg.getBuffer))
-                sendSyncMsg()
-              case _ =>
+                if (isLeader) sendSyncMsg()
+              case State =>
+                logger.debug(s"• `State` received: $msg")
+                if (isLeader) sendSyncMsg()
+              case Merge =>
+                logger.debug(s"• `Merge` received: $msg")
+                assert(isLeader)
+                if (isLeader) jc.getState(msg.src(), 5000)
+              case _ => logger.debug(s"• unknown received: $msg")
             }
-          case _ => logger.debug(s"discarding message:\n$msg")
+          case _ => logger.debug(s"• discarding message:\n$msg")
         }
 
-        def sync() = {
-        //  if (isLeader) sendSyncMsg()
-        //  else
+        def merge() = {
+          if (isLeader) sendSyncMsg()
+          else sendMergeMsg()
         }
 
         def viewAccepted(view: View) = {
@@ -148,36 +154,32 @@ object Group {
           v
         }
 
-        private def sendHelloMsg(dest: Endpoint) = {
-          val msg = new Message(true)
-          val hdr = new MessageHeader(Hello)
-          msg.putHeader(hdr.getMagicId, hdr)
-          // send back to the coordinator
-          msg.setDest(jc.getView.getMembers.get(0))
-          msg.setBuffer(Endpoint.toBuffer(dest))
-          jc.send(msg)
+        // say hello to the leader
+        private def sendHelloMsg(dest: Endpoint) =
+          send(Hello, Some(Endpoint.toBuffer(dest)))
+        // leader broadcasts sync
+        private def sendSyncMsg() = send(Sync, None, toLeader = false)
+        // send a merge to the leader
+        private def sendMergeMsg() = {
+          send(Merge, None)
+          send(State, None)
         }
 
-        private def sendSyncMsg() = {
-          // sync message will force followers to get state
+        private def send(
+          m: Msg,
+          b: Option[Array[Byte]],
+          toLeader: Boolean = true): Unit = {
           val msg = new Message(true)
-          val hdr = new MessageHeader(Sync)
+          val hdr = new MessageHeader(m)
           msg.putHeader(hdr.getMagicId, hdr)
-          logger.debug(s"sending sync message: $msg")
+          b.foreach(msg.setBuffer)
+          if (toLeader) {
+            msg.setSrc(jc.getAddress)
+            msg.setDest(jc.getView.getMembers.get(0))
+          }
+          logger.debug(s"• sending ${m.getClass.getSimpleName} message: $msg")
           jc.send(msg)
         }
-
-        /*
-        private def sendMergeMapMsg() = {
-          val msg = new Message(true)
-          val hdr = new MessageHeader(MergeMap)
-          msg.putHeader(hdr.getMagicId, hdr)
-          // send back to the coordinator
-          msg.setDest(jc.getView.getMembers.get(0))
-          msg.setBuffer(Endpoint.toBuffer(dest))
-          jc.send(msg)
-        }*/
-
       }
     }
   }
