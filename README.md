@@ -133,7 +133,7 @@ kroto>
 
 ```
 
-###Leader
+### Leader
 Lets issue the `leader` command in the first telnet session:
 ```bash
 kroto> leader
@@ -150,7 +150,7 @@ kroto>
 Notice how the first session is connected to the leader, and the second is not.
 
 
-###Topology
+### Topology
 Lets take a look at the topology by entering `top` in the first shell:
 ```bash
 kroto> top
@@ -235,7 +235,7 @@ kroto>
 
 You can see that our 5 mappings have been replicated to the other nodes in the topology! (The keys are hashed.)
 
-###Select
+### Select
 Now lets select some keys and see where we get routed:
 ```bash
 kroto> select key2
@@ -294,5 +294,5 @@ kroto>
 ```
 You can see that once the node is removed from the replica set, it can no longer be selected.
 
-##Code Examples
+## Code Examples
 
