@@ -11,7 +11,7 @@ The kroto library provides a thin wrapper around the [JGroups reliable messaging
 
 kroto was designed to provide clustered JVM applications an API to dynamically find live service endpoints given a routing key.
 Endpoints are grouped in ReplicaSets which make up a Topology.
-The Topology is accessed by the application via a Selector when given a key, selects a ReplicaSet that returns a live endpoint via a LoadBalancer.
+The Topology is accessed by the application via a Selector when given a key, selects a ReplicaSet that returns a live endpoint via a LoadBalancer. kroto provides more then just cluster membership, it provides pluggable partitioning which allows a node to receive a requests, and forward it to a node that can provide a response based on data locality.
 
 ![selector](selector.png)
  
